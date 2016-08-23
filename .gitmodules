@@ -1,0 +1,3 @@
+[submodule "ocean-ic"]
+	path = ocean-ic
+	url = git@github.com:nicjhan/ocean-ic.git
