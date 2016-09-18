@@ -11,7 +11,7 @@ import multiprocessing as mp
 import netCDF4 as nc
 
 from file_util import create_mom_nudging_file, create_nemo_nudging_file
-from lib_util import compress_netcdf_file
+from lib_util import compress_netcdf_file, sort_by_date, DaySeries
 
 """
 Combine forcing fields to create nudging files that can be used to nudge salt
@@ -42,6 +42,9 @@ def make_nudging_field(forcing_files, var_name, output_file,
     of = nc.Dataset(output_file, 'r+')
     output_idx = 0
 
+    day_series = DaySeries(forcing_files)
+    new_days = day_series.normalise_to_year_start()
+
     for file in forcing_files:
         with nc.Dataset(file, 'r') as ff:
             time_var = ff.variables['time']
@@ -52,21 +55,13 @@ def make_nudging_field(forcing_files, var_name, output_file,
                     tmp_var -= 273.15
 
                 of.variables[var_name][output_idx, :] = tmp_var[:]
+                of.variables['time'][output_idx] = new_days[output_idx]
                 output_idx += 1
 
     if var_name == 'temp':
         # Check temperature units.
         assert(np.max(of.variables[var_name][0, 0, :, :]) < 40.0)
         of.variables[var_name].units = 'degrees C'
-
-    # FIXME: figure out what to do with the time variable.
-    #of.variables['time'][0] = start_day
-    #of.variables['time'][-1] = end_day
-
-    # Check that time dimension looks reasonable, we expect that the base
-    # files have an increasing time dimension.
-    #assert(min(np.diff(of.variables['time'])) >= 29)
-    #assert(max(np.diff(of.variables['time'])) <= 46)
 
     of.close()
 
@@ -82,22 +77,12 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
         for t in range(time_var.shape[0]):
             of.variables['coeff'][t, :] = damp_coeff
 
+
 def check_dates(start_date, forcing_files):
     """
-    Run various checks on consistency of dates. 
+    Run various checks on consistency of dates.
     """
-
-    year = start_date[0]
-    month = start_date[1]
-
     return None
-
-def sort_by_date(forcing_files):
-    """
-    Sort list in increasing order of date. 
-    """
-
-    return forcing_files
 
 def main():
 
@@ -132,7 +117,7 @@ def main():
 
     forcing_files = sort_by_date(args.forcing_files)
     err = check_dates(start_date, forcing_files)
-    if err is not None
+    if err is not None:
         print('Error: {}'.format(err))
         return 1
 
@@ -151,7 +136,7 @@ def main():
                                 start_date,
                                 args.forcing_files[0])
         make_nudging_field(args.forcing_files, var_name, nudging_file,
-                           args.resolution)
+                           start_date, args.resolution)
 
         coeff_file = '{}_sponge_coeff.nc'.format(var_name)
         shutil.copy(nudging_file, coeff_file)

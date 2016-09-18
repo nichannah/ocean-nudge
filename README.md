@@ -15,7 +15,7 @@ Regrid the reanalysis files to the model grid. Do this with the ocean-regrid too
 
 For example, for MOM:
 ```
-$ ./regrid.py
+$ ./regrid.py ORAS4 coords_T.nc coords_T.nc thetao_oras4_1m_2014_grid_T.nc thetao MOM ocean_hgrid.nc ocean_vgrid.nc oras4_on_mom_grid.nc temp --dest_mask ocean_mask.nc
 ```
 
 We can use a bash for-loop to regrid multiple files with a single command:
@@ -35,7 +35,7 @@ Combine the above regridded reanalysis files into a single nudging source file.
 
 e.g. for MOM:
 ```
-$ ./makenudge.py mom_oras4.nc --damp_coeff 1e-5
+$ ./makenudge.py oras4_on_mom_grid.nc
 ```
 
 For MOM there will be two kinds of otuput
