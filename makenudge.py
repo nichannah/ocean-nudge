@@ -88,9 +88,11 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("forcing_files", nargs='+',
-                        help="""The files containing salt and temp
+                        help="""The files containing salt or temp
                         forcing variables.
                         This is expected to contain monthly means.""")
+    parser.add_argument("--input_var_name", default='temp',
+                        help="")
     parser.add_argument("--model_name", default='MOM',
                         help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
@@ -106,14 +108,8 @@ def main():
 
     assert args.model_name == 'MOM' or args.model_name == 'NEMO'
 
-    if args.model_name == 'MOM':
-        temp_var = 'temp'
-        salt_var = 'salt'
-    else:
-        temp_var = 'votemper'
-        salt_var = 'vosaline'
-
     start_date = dt.date(args.run_start_year, args.run_start_month, 1)
+    var_name = args.input_var_name
 
     forcing_files = sort_by_date(args.forcing_files)
     err = check_dates(start_date, forcing_files)
@@ -121,30 +117,26 @@ def main():
         print('Error: {}'.format(err))
         return 1
 
-    for var in [temp_var, salt_var]:
-        for postfix in ['_spong.nc', '_sponge_coeff.nc']:
-            filename = var + postfix
-            if os.path.exists(filename):
-                print('Error: output file {} exists. '.format(filename) + \
-                      'Please move or remove', file=sys.stderr)
-                return 1
+    for postfix in ['_spong.nc', '_sponge_coeff.nc']:
+        filename = var_name + postfix
+        if os.path.exists(filename):
+            print('Error: output file {} exists. '.format(filename) + \
+                  'Please move or remove', file=sys.stderr)
+            return 1
 
-    #for var in (temp_var, salt_var):
-    for var_name in [temp_var]:
-        nudging_file = var_name + '_sponge.nc'
-        create_mom_nudging_file(nudging_file, var_name, '', '',
-                                start_date,
-                                args.forcing_files[0])
-        make_nudging_field(args.forcing_files, var_name, nudging_file,
-                           start_date, args.resolution)
+    nudging_file = var_name + '_sponge.nc'
+    create_mom_nudging_file(nudging_file, var_name, '', '',
+                            start_date,
+                            args.forcing_files[0])
+    make_nudging_field(args.forcing_files, var_name, nudging_file,
+                       start_date, args.resolution)
 
-        coeff_file = '{}_sponge_coeff.nc'.format(var_name)
-        shutil.copy(nudging_file, coeff_file)
-        make_damp_coeff_field(coeff_file, args.damp_coeff, var_name)
+    coeff_file = '{}_sponge_coeff.nc'.format(var_name)
+    shutil.copy(nudging_file, coeff_file)
+    make_damp_coeff_field(coeff_file, args.damp_coeff, var_name)
 
     pool = mp.Pool(2)
     pool.map(compress_netcdf_file, [nudging_file, coeff_file])
-
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -33,8 +33,8 @@ def create_mom_nudging_file(filename, var_name, var_longname,
 
     time = f.createVariable('time', 'f8', ('time'))
     time.long_name = 'time'
-    time.units = "days since {}-{}-01 00:00:00".format(str(start_date.year).zfill(),
-                                                       str(start_date.month).zfill())
+    time.units = "days since {}-{}-01 00:00:00".format(str(start_date.year).zfill(4),
+                                                       str(start_date.month).zfill(2))
     time.cartesian_axis = "T"
     time.calendar_type = "GREGORIAN"
     time.calendar = "GREGORIAN"
@@ -71,8 +71,8 @@ def create_nemo_nudging_file(filename, var_name, var_longname,
 
     time = f.createVariable('time_counter', 'f8', ('time_counter'))
     time.long_name = 'time'
-    time.units = "days since {}-{}-01 00:00:00".format(str(start_date.year).zfill(),
-                                                       str(start_date.month).zfill())
+    time.units = "days since {}-{}-01 00:00:00".format(str(start_date.year).zfill(4),
+                                                       str(start_date.month).zfill(2))
     time.cartesian_axis = "T"
 
     var = f.createVariable(var_name, 'f8', ('time_counter', 'z', 'y', 'x'))

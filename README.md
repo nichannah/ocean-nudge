@@ -53,5 +53,30 @@ Configure the model to use the newly created nuding file. See below for instruct
 
 ## MOM
 
+Copy the \*\_sponge.nc files from above into the MOM INPUT directory. Then add the following to the input.nml:
+
+```
+&ocean_sponges_tracer_nml
+    use_this_module = .TRUE.
+    damp_coeff_3d = .TRUE.
+/
+```
+
+Take not of the model output as MOM starts up, there should be output similar to the following:
+
+```
+==>Note from ocean_sponges_tracer_mod: Using this module.
+==> Using sponge damping times specified from file INPUT/temp_sponge_coeff.nc
+==> Using sponge data specified from file INPUT/temp_sponge.nc
+```
+
+A common error looks like:
+```
+FATAL from PE   39: time_interp_external 2: time after range of list,file=INPUT/temp_sponge.nc,field=temp
+```
+
+This means that the time range covered by the sponge file does not match the model runtime.
+
 ## NEMO
+
 
