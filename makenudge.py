@@ -97,9 +97,9 @@ def main():
                         help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
                         help="Value for the damping coefficient.")
-    parser.add_argument("--run_start_year", default=1,
+    parser.add_argument("--run_start_year", default=1, type=int,
                         help="The start year of the nudging output. Default is 1 (0001)")
-    parser.add_argument("--run_start_month", default=1,
+    parser.add_argument("--run_start_month", default=1, type=int,
                         help="The start month of the nudging output. Default is 1 (January)")
     parser.add_argument("--resolution", default=0,
                         help="""The number of intra-monthly points created by

@@ -4,7 +4,7 @@ Create ocean temperature and salt nudging and damping coefficient files. These f
 
 # Step 1
 
-Download temperature and salinity fields from the GODAS or ORAS reanalysis dataset. Consider the length of your run and download however many months of reanalysis are needed. Be sure to download GODAS in NetCDF format. Useful URLs:
+Download temperature and salinity fields from the GODAS or ORAS reanalysis dataset. Be sure to download GODAS in NetCDF format. Useful URLs:
 
 GODAS: http://www.esrl.noaa.gov/psd/data/gridded/data.godas.html
 ORAS4: ftp://ftp.icdc.zmaw.de/EASYInit/ORA-S4/
@@ -31,7 +31,7 @@ $ ./regrid.py
 
 # Step 3
 
-Combine the above regridded reanalysis files into a single nudging source file.
+Combine the above regridded reanalysis files into a single nudging source file. Note the reanalyses are monthly averages with a nominal time index in the middle of the month. This means that in order for nudging to start at the beginning of the year data from the previous year is needed - makenudge.py can create data for the beginning January by interpolating from December of the previous year.
 
 e.g. for MOM:
 ```
@@ -65,7 +65,7 @@ Copy the \*\_sponge.nc files from above into the MOM INPUT directory. Then add t
 Take not of the model output as MOM starts up, there should be output similar to the following:
 
 ```
-==>Note from ocean_sponges_tracer_mod: Using this module.
+==> Note from ocean_sponges_tracer_mod: Using this module.
 ==> Using sponge damping times specified from file INPUT/temp_sponge_coeff.nc
 ==> Using sponge data specified from file INPUT/temp_sponge.nc
 ```
@@ -75,7 +75,7 @@ A common error looks like:
 FATAL from PE   39: time_interp_external 2: time after range of list,file=INPUT/temp_sponge.nc,field=temp
 ```
 
-This means that the time range covered by the sponge file does not match the model runtime.
+This means that the time range covered by the nudging/sponge file does not match the model runtime. For example the sponge time may go from 0001-01-01 to 0002-01-01 while the model starts in 2004.
 
 ## NEMO
 
