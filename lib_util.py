@@ -7,7 +7,7 @@ import shlex
 import shutil
 import subprocess as sp
 
-def compress_netcdf_file(filename, compression_level=1):
+def compress_netcdf_file(filename, compression_level=7):
     """
     Use nccopy to compress a netcdf file.
     """

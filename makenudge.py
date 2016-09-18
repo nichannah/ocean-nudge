@@ -32,7 +32,7 @@ Assumptions:
 """
 
 def make_nudging_field(forcing_files, var_name, output_file,
-                       start_day, end_day, monthly_resolution):
+                       start_date, monthly_resolution):
     """
     Combine forcing files into a nudging field/file. This may invlolve
     increasing the time resolution of the forcing using linear interpolation.
@@ -50,7 +50,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
                 if var_name == 'temp' and 'degrees K' in ff.variables[var_name].units:
                     tmp_var -= 273.15
 
-                of.variables[var_name][output_idx, :] = tmp_var[t, :]
+                of.variables[var_name][output_idx, :] = tmp_var[:]
                 output_idx += 1
 
     if var_name == 'temp':
@@ -74,7 +74,6 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
     """
     Make the damping coeffiecient field.
     """
-
     with nc.Dataset(output_file, 'r+') as of:
         of.renameVariable(variable, 'coeff')
 
@@ -95,8 +94,6 @@ def main():
                         help="Value for the damping coefficient.")
     parser.add_argument("--start_date", default='01-01-0001',
                         help="The start date of the nudging output.")
-    parser.add_argument("--end_date", default='01-01-0001',
-                        help="The end date of the nudging output.")
     parser.add_argument("--resolution", default=0,
                         help="""The number of intra-monthly points created by
                                 interpolating between forcing inputs.""")
@@ -111,28 +108,24 @@ def main():
         temp_var = 'votemper'
         salt_var = 'vosaline'
 
-    start_day = None
-    end_day = None
-
-    for var in (temp_var, salt_var):
-        filename = var + '_sponge.nc'
-        if os.path.exists(filename):
-            print('Error: output file {} exists. '.format(filename) + \
-                  'Please move or remove', file=sys.stderr)
-            return 1
+    for var in [temp_var, salt_var]:
+        for postfix in ['_spong.nc', '_sponge_coeff.nc']:
+            filename = var + postfix
+            if os.path.exists(filename):
+                print('Error: output file {} exists. '.format(filename) + \
+                      'Please move or remove', file=sys.stderr)
+                return 1
 
     #for var in (temp_var, salt_var):
     for var_name in [temp_var]:
         nudging_file = var_name + '_sponge.nc'
-        import pdb
-        pdb.set_trace()
         create_mom_nudging_file(nudging_file, var_name, '', '', args.forcing_files[0])
         make_nudging_field(args.forcing_files, var_name, nudging_file,
-                           start_day, end_day, args.resolution)
+                           args.start_date, args.resolution)
 
-        coeff_file = '{}_sponge_coeff.nc'.format(args.variable)
+        coeff_file = '{}_sponge_coeff.nc'.format(var_name)
         shutil.copy(nudging_file, coeff_file)
-        #make_damp_coeff_field(coeff_file, args.damp_coeff, var)
+        make_damp_coeff_field(coeff_file, args.damp_coeff, var_name)
 
     pool = mp.Pool(2)
     pool.map(compress_netcdf_file, [nudging_file, coeff_file])
