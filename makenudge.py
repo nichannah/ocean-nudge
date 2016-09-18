@@ -5,6 +5,7 @@ from __future__ import print_function
 import sys, os
 import shutil
 import argparse
+import datetime as dt
 import numpy as np
 import multiprocessing as mp
 import netCDF4 as nc
@@ -67,7 +68,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
     #assert(min(np.diff(of.variables['time'])) >= 29)
     #assert(max(np.diff(of.variables['time'])) <= 46)
 
-    of.close()        
+    of.close()
 
 
 def make_damp_coeff_field(output_file, damp_coeff, variable):
@@ -81,6 +82,23 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
         for t in range(time_var.shape[0]):
             of.variables['coeff'][t, :] = damp_coeff
 
+def check_dates(start_date, forcing_files):
+    """
+    Run various checks on consistency of dates. 
+    """
+
+    year = start_date[0]
+    month = start_date[1]
+
+    return None
+
+def sort_by_date(forcing_files):
+    """
+    Sort list in increasing order of date. 
+    """
+
+    return forcing_files
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -92,8 +110,10 @@ def main():
                         help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
                         help="Value for the damping coefficient.")
-    parser.add_argument("--start_date", default='01-01-0001',
-                        help="The start date of the nudging output.")
+    parser.add_argument("--run_start_year", default=1,
+                        help="The start year of the nudging output. Default is 1 (0001)")
+    parser.add_argument("--run_start_month", default=1,
+                        help="The start month of the nudging output. Default is 1 (January)")
     parser.add_argument("--resolution", default=0,
                         help="""The number of intra-monthly points created by
                                 interpolating between forcing inputs.""")
@@ -108,6 +128,14 @@ def main():
         temp_var = 'votemper'
         salt_var = 'vosaline'
 
+    start_date = dt.date(args.run_start_year, args.run_start_month, 1)
+
+    forcing_files = sort_by_date(args.forcing_files)
+    err = check_dates(start_date, forcing_files)
+    if err is not None
+        print('Error: {}'.format(err))
+        return 1
+
     for var in [temp_var, salt_var]:
         for postfix in ['_spong.nc', '_sponge_coeff.nc']:
             filename = var + postfix
@@ -119,9 +147,11 @@ def main():
     #for var in (temp_var, salt_var):
     for var_name in [temp_var]:
         nudging_file = var_name + '_sponge.nc'
-        create_mom_nudging_file(nudging_file, var_name, '', '', args.forcing_files[0])
+        create_mom_nudging_file(nudging_file, var_name, '', '',
+                                start_date,
+                                args.forcing_files[0])
         make_nudging_field(args.forcing_files, var_name, nudging_file,
-                           args.start_date, args.resolution)
+                           args.resolution)
 
         coeff_file = '{}_sponge_coeff.nc'.format(var_name)
         shutil.copy(nudging_file, coeff_file)
