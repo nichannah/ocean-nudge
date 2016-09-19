@@ -27,25 +27,21 @@ Regrid the reanalysis files to the model grid. Do this with the ocean-regrid too
 
 For example, for MOM:
 ```
-$ ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_2004_grid_T.nc thetao MOM \
-        ocean_hgrid.nc ocean_vgrid.nc oras4_temp_on_mom_grid.nc temp --dest_mask ocean_mask.nc --regrid_weights regrid_weights.nc
+$ ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_2004_grid_T.nc thetao \
+        MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_on_mom_grid.nc temp \
+        --dest_mask ocean_mask.nc --regrid_weights regrid_weights.nc
 ```
 
 We can use a bash for-loop to regrid multiple files with a single command:
 ```
 $ for i in 2003 2004 2005; do \
-    ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao MOM \
-        ocean_hgrid.nc ocean_vgrid.nc oras4_temp_${i}_mom_grid.nc temp --dest_mask ocean_mask.nc --regrid_weights regrid_weights.nc; \
+    ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
+        MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_${i}_mom_grid.nc temp \
+        --dest_mask ocean_mask.nc --regrid_weights regrid_weights.nc;
 done
 ```
 
 Note that in this case because the --regrid_weights option is used the computationally expensive part of the regridding only done once and the whole operation should be relatively fast. It can be sped up further by using the --use_mpi option.
-
-The same can be done for NEMO:
-
-```
-$ ./regrid.py
-```
 
 # Step 3
 
@@ -53,7 +49,8 @@ Combine the above regridded reanalysis files into a single nudging source file. 
 
 e.g. for MOM:
 ```
-$ time ./makenudge.py oras4_temp_2003_mom_grid.nc oras4_temp_2004_mom_grid.nc oras4_temp_2005_mom_grid.nc --base_year 2003
+$ time ./makenudge.py oras4_temp_2003_mom_grid.nc oras4_temp_2004_mom_grid.nc \
+    oras4_temp_2005_mom_grid.nc --base_year 2003
 real    16m46.109s
 user    15m44.637s
 sys     3m56.738s
@@ -61,10 +58,13 @@ sys     3m56.738s
 
 Note that this is a long-running operation, the nudging files can be big and time consuming compression is needed. For MOM there will be two kinds of otuput, the actual nudging source file which ends in \_sponge.nc and the 3D relaxation coefficient file which ends in \_coeff_sponge.nc.
 
-for NEMO:
+For Nemo:
 ```
-$ ./makenudge.py NEMO --damp_coeff 1e-5 --start_date "01-01-2016" <input01.nc> <input02.nc>
+$ ./makenudge.py oras4_temp_2003_nemo_grid.nc oras4_temp_2004_nemo_grid.nc \
+    oras4_temp_2005_nemo_grid.nc --base_year 2003
 ```
+
+This will output two files: 1_data_1m_potential_temperature_nomask.nc (for temperature) and resto.nc.
 
 # Step 4
 
@@ -103,3 +103,4 @@ $ ncdump -v time temp_sponge.nc
 
 ## NEMO
 
+The NEMO_3.6 ORCA2_LIM configuration is already set up to do global nudging, it does this to maintain temperature and salinity tracers in the Mediterranean. To carry out global nudging with the files generated above just replace the input files: 1_data_1m_potential_temperature_nomask.nc, 1_data_1m_salinity_nomask.nc and resto.nc
