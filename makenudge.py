@@ -117,21 +117,30 @@ def main():
         print('Error: {}'.format(err))
         return 1
 
-    for postfix in ['_spong.nc', '_sponge_coeff.nc']:
-        filename = var_name + postfix
+    if args.model == MOM:
+        nudging_file = var_name + '_sponge.nc'
+        coeff_file = '{}_sponge_coeff.nc'.format(var_name)
+    else:
+        nudging_file = var_name + '_nomask.nc'
+        coeff_file = 'resto.nc'
+
+    for filename in [nudging_file, coeff_file]:
         if os.path.exists(filename):
             print('Error: output file {} exists. '.format(filename) + \
                   'Please move or remove', file=sys.stderr)
             return 1
 
-    nudging_file = var_name + '_sponge.nc'
-    create_mom_nudging_file(nudging_file, var_name, '', '',
-                            start_date,
-                            args.forcing_files[0])
+    if args.model == MOM:
+        create_mom_nudging_file(nudging_file, var_name, '', '',
+                                start_date,
+                                args.forcing_files[0])
+    else:
+        create_nemo_nudging_file(nudging_file, var_name, '', '',
+                                start_date,
+                                args.forcing_files[0])
     make_nudging_field(args.forcing_files, var_name, nudging_file,
                        start_date, args.resolution)
 
-    coeff_file = '{}_sponge_coeff.nc'.format(var_name)
     shutil.copy(nudging_file, coeff_file)
     make_damp_coeff_field(coeff_file, args.damp_coeff, var_name)
 

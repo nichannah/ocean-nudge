@@ -83,11 +83,11 @@ Note that this is a long-running operation, the nudging files can be big and tim
 
 For Nemo:
 ```
-$ ./makenudge.py oras4_temp_2003_nemo_grid.nc oras4_temp_2004_nemo_grid.nc \
-    oras4_temp_2005_nemo_grid.nc --base_year 2003
+$ ./makenudge.py --model_name NEMO --input_var_name votemper oras4_temp_2003_nemo_grid.nc \
+    oras4_temp_2004_nemo_grid.nc oras4_temp_2005_nemo_grid.nc --base_year 2003
 ```
 
-This will output two files: 1_data_1m_potential_temperature_nomask.nc (for temperature) and resto.nc.
+This will output two files: \<input_var_name\>\_nomask.nc and resto.nc.
 
 ## Step 4
 
@@ -126,4 +126,21 @@ $ ncdump -v time temp_sponge.nc
 
 ### NEMO
 
-The NEMO_3.6 ORCA2_LIM configuration is already set up to do global nudging, it does this to maintain temperature and salinity tracers in the Mediterranean. To carry out global nudging with the files generated above just replace the input files: 1_data_1m_potential_temperature_nomask.nc, 1_data_1m_salinity_nomask.nc and resto.nc
+The NEMO_3.6 ORCA2 configuration is already set up to do global nudging, it does this to maintain temperature and salinity tracers in the Mediterranean. To carry out global nudging with the files generated above:
+
+1. replace the input files: 1_data_1m_potential_temperature_nomask.nc and 1_data_1m_salinity_nomask.nc with the corrosponding temperature and salinity \_nomask.nc files generated above. Overwrite the input file resto.nc with the file of the same name generated above.
+
+2. Check the values of following configuration namelist parameters:
+
+```{fortran}
+!-----------------------------------------------------------------------
+&namtra_dmp    !   tracer: T & S newtonian damping
+!-----------------------------------------------------------------------
+    ln_tradmp   =  .true.   !  add a damping termn (T) or not (F)
+    nn_zdmp     =    0      !  vertical   shape =0    damping throughout the water column
+                            !                   =1 no damping in the mixing layer (kz  criteria)
+                            !                   =2 no damping in the mixed  layer (rho crieria)
+    cn_resto    = 'resto.nc'! Name of file containing restoration coefficient field
+/
+```
+
