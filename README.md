@@ -49,14 +49,14 @@ Note that the coordinates of the T grid are also downloaded.
 Regrid the reanalysis files to the model grid. Do this with the ocean-regrid tool by following the documentation [here](https://github.com/nicjhan/ocean-regrid).
 
 For example, for MOM:
-```
+```{bash}
 $ ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_2004_grid_T.nc thetao \
         MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_on_mom_grid.nc temp \
         --dest_mask ocean_mask.nc --regrid_weights regrid_weights.nc
 ```
 
 We can use a bash for-loop to regrid multiple files with a single command:
-```
+```{bash}
 $ for i in 2003 2004 2005; do \
     ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
         MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_${i}_mom_grid.nc temp \
@@ -64,11 +64,21 @@ $ for i in 2003 2004 2005; do \
 done
 ```
 
+And for NEMO:
+
+```{bash}
+$ for i in 2003 2004 2005; do \
+    ./regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
+        NEMO coordinates.nc data_1m_potential_temperature_nomask.nc oras4_temp_${i}_nemo_grid.nc votemper \
+        --regrid_weights regrid_weights.nc; \
+done
+```
+
 Note that in this case because the --regrid_weights option is used the computationally expensive part of the regridding only done once and the whole operation should be relatively fast. It can be sped up further by using the --use_mpi option.
 
 ## Step 3
 
-Combine the above regridded reanalysis files into a single nudging source file. Note the reanalyses are monthly averages with a nominal time index in the middle of the month. This means that in order for nudging to start at the beginning of the year data from the previous year is needed - makenudge.py creates data for the beginning of January by interpolating from December of the previous year. So, for example to nudge the model for the whole of 2004:
+Combine the above regridded reanalysis files into a single nudging source file. Note the reanalyses are monthly averages with a nominal time index in the middle of the month. This means that in order for nudging to start at the beginning of the year data from the previous year is needed - the models create data for the beginning of January by interpolating from December of the previous year. So, for example to nudge the model for the whole of 2004:
 
 e.g. for MOM:
 ```
