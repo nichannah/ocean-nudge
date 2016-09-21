@@ -4,7 +4,7 @@ Create ocean temperature and salt nudging and damping coefficient files. These f
 
 # Dependencies
 
-This tool is written in Python and depends on many different Python packages. See section 'Install' below for instructions on how to download all of the Python dependencies. It also depends on
+This tool is written in Python and depends on several different Python packages. See section 'Install' below for instructions on how to download all of the Python dependencies. It also depends on
  [ESMF_RegridWeightGen](https://www.earthsystemcog.org/projects/regridweightgen/) program to perform regridding between non-rectilinear grids.
 
 # Install
@@ -14,8 +14,8 @@ This tool is written in Python and depends on many different Python packages. Se
 3. Install the [git](https://git-scm.com/) revision control system if you don't already have it.
 4. Download ocean-ic:
 ```{bash}
-$ git clone --recursive https://github.com/nicjhan/ocean-ic.git
-$ cd ocean-ic
+$ git clone --recursive https://github.com/nicjhan/ocean-nudge.git
+$ cd ocean-nudge
 ```
 5. Setup the Anaconda environment. This will download all the necessary Python packages.
 ```{bash}
@@ -97,7 +97,7 @@ Configure the model to use the newly created nuding file. See below for instruct
 
 Copy the \*\_sponge.nc files from above into the MOM INPUT directory. Then add the following to the input.nml:
 
-```
+```{fortran}
 &ocean_sponges_tracer_nml
     use_this_module = .TRUE.
     damp_coeff_3d = .TRUE.
@@ -133,6 +133,19 @@ The NEMO_3.6 ORCA2 configuration is already set up to do global nudging, it does
 2. Check the values of following configuration namelist parameters:
 
 ```{fortran}
+&namrun        !   parameters of the run
+!-----------------------------------------------------------------------
+    ln_rstart   = .false.   !  start from rest (F) or from a restart file (T)
+
+&namtsd    !   data : Temperature  & Salinity
+!-----------------------------------------------------------------------
+!          !  file name                            ! frequency (hours) ! variable  ! time interp. !  clim  ! 'yearly'/ ! weights  ! rotation ! land/sea mask !
+!          !                                       !  (if <0  months)  !   name    !   (logical)  !  (T/F) ! 'monthly' ! filename ! pairing  ! filename      !
+    sn_tem  = 'data_1m_potential_temperature_nomask',         -1        ,'votemper' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
+    sn_sal  = 'data_1m_salinity_nomask'             ,         -1        ,'vosaline' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
+    ln_tsd_init   = .true.    !  Initialisation of ocean T & S with T &S input data (T) or not (F)
+    ln_tsd_tradmp = .true.   !  damping of ocean T & S toward T &S input data (T) or not (F)
+
 !-----------------------------------------------------------------------
 &namtra_dmp    !   tracer: T & S newtonian damping
 !-----------------------------------------------------------------------
