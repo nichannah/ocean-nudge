@@ -2,7 +2,30 @@
 
 Create ocean temperature and salt nudging and damping coefficient files. These files can used to nudge an either MOM or NEMO towards observations.
 
-# Step 1
+# Dependencies
+
+This tool is written in Python and depends on many different Python packages. See section 'Install' below for instructions on how to download all of the Python dependencies. It also depends on
+ [ESMF_RegridWeightGen](https://www.earthsystemcog.org/projects/regridweightgen/) program to perform regridding between non-rectilinear grids.
+
+# Install
+
+1. Download and install [Anaconda](https://www.continuum.io/downloads) for your platform.
+2. Install ESMF_RegridWeightGen. ESMF releases can be found [here](http://www.earthsystemmodeling.org/download/data/releases.shtml).
+3. Install the [git](https://git-scm.com/) revision control system if you don't already have it.
+4. Download ocean-ic:
+```{bash}
+$ git clone --recursive https://github.com/nicjhan/ocean-ic.git
+$ cd ocean-ic
+```
+5. Setup the Anaconda environment. This will download all the necessary Python packages.
+```{bash}
+$ conda env create -f ocean.yml
+$ source activate ocean
+```
+
+# Use
+
+## Step 1
 
 Download temperature and salinity fields from the GODAS or ORAS reanalysis dataset. Be sure to download GODAS in NetCDF format. Useful URLs:
 
@@ -21,7 +44,7 @@ $ gunzip *.gz
 
 Note that the coordinates of the T grid are also downloaded.
 
-# Step 2
+## Step 2
 
 Regrid the reanalysis files to the model grid. Do this with the ocean-regrid tool by following the documentation [here](https://github.com/nicjhan/ocean-regrid).
 
@@ -43,7 +66,7 @@ done
 
 Note that in this case because the --regrid_weights option is used the computationally expensive part of the regridding only done once and the whole operation should be relatively fast. It can be sped up further by using the --use_mpi option.
 
-# Step 3
+## Step 3
 
 Combine the above regridded reanalysis files into a single nudging source file. Note the reanalyses are monthly averages with a nominal time index in the middle of the month. This means that in order for nudging to start at the beginning of the year data from the previous year is needed - makenudge.py creates data for the beginning of January by interpolating from December of the previous year. So, for example to nudge the model for the whole of 2004:
 
@@ -66,11 +89,11 @@ $ ./makenudge.py oras4_temp_2003_nemo_grid.nc oras4_temp_2004_nemo_grid.nc \
 
 This will output two files: 1_data_1m_potential_temperature_nomask.nc (for temperature) and resto.nc.
 
-# Step 4
+## Step 4
 
 Configure the model to use the newly created nuding file. See below for instructions for both MOM and NEMO.
 
-## MOM
+### MOM
 
 Copy the \*\_sponge.nc files from above into the MOM INPUT directory. Then add the following to the input.nml:
 
@@ -101,6 +124,6 @@ $ ncdump -h temp_sponge.nc
 $ ncdump -v time temp_sponge.nc
 ```
 
-## NEMO
+### NEMO
 
 The NEMO_3.6 ORCA2_LIM configuration is already set up to do global nudging, it does this to maintain temperature and salinity tracers in the Mediterranean. To carry out global nudging with the files generated above just replace the input files: 1_data_1m_potential_temperature_nomask.nc, 1_data_1m_salinity_nomask.nc and resto.nc
