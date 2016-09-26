@@ -25,7 +25,7 @@ $ source activate ocean
 
 # Use
 
-Follow the example steps below to nudge MOM or NEMO using ORAS4 monthly data. See [here](docs/NEMO_GODAS_pentad.md) for an example that nudges NEMO using GODAS pentad (5 daily) data.
+Follow the example steps below to nudge MOM or NEMO using ORAS4 monthly data. In addition [here](docs/NEMO_GODAS_pentad.md) is an example that nudges [NEMO using GODAS pentad](docs/NEMO_GODAS_pentad.md).
 
 ## Step 1
 
@@ -48,7 +48,7 @@ Note that the coordinates of the T grid are also downloaded.
 
 ## Step 2
 
-Regrid the reanalysis files to the model grid. Do this with the ocean-regrid tool by following the documentation [here](https://github.com/nicjhan/ocean-regrid).
+Regrid the reanalysis files to the model grid. Do this with the ocean-regrid tool found in the regridder directory. Additional documentation [here](https://github.com/nicjhan/ocean-regrid).
 
 For example, for MOM:
 ```{bash}
