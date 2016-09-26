@@ -25,6 +25,8 @@ $ source activate ocean
 
 # Use
 
+Follow the example steps below to nudge MOM or NEMO using ORAS4 monthly data. See [here](docs/NEMO_GODAS_pentad.md) for an example that nudges NEMO using GODAS pentad (5 daily) data.
+
 ## Step 1
 
 Download temperature and salinity fields from the GODAS or ORAS reanalysis dataset. Be sure to download GODAS in NetCDF format. Useful URLs:
