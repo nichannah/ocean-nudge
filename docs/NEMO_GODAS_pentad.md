@@ -43,5 +43,15 @@ $ for d in 20031231 20040105 20040110; do \
 
 ## Step 4.
 
+Combine the above regridded reanalysis files into a single nudging source file.
+
+For Nemo:
+```
+$ ./makenudge.py --model_name NEMO --input_var_name votemper
+    godas_temp_20031231_nemo_grid.nc godas_temp_20040105_nemo_grid.nc godas_temp_20040105_nemo_grid.nc  --base_year 2003
+```
+
 ## Step 5.
+
+Same as for monthly data. FIXME, provide a link.
 
