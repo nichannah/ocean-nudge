@@ -133,7 +133,7 @@ $ ../../../makenudge.py --model_name NEMO --input_var_name vosaline oras4_salt_2
 
 ## Step 4
 
-Configure the model to use the newly created nuding file. See below for instructions for both MOM and NEMO.
+Configure the model to use the newly created nudging file. See below for instructions for both MOM and NEMO.
 
 ### MOM
 

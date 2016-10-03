@@ -25,27 +25,6 @@ def compress_netcdf_file(filename, compression_level=7):
 
     shutil.move(tmp, filename)
 
-
-def sort_by_date(forcing_files):
-    """
-    Sort list in increasing order of date.
-    """
-
-    files_with_dates = []
-    for filename in forcing_files:
-        with nc.Dataset(filename) as f:
-            if f.variables.has_key('time_counter'):
-                first_time = f.variables['time_counter'][0]
-            else:
-                first_time = f.variables['time'][0]
-
-            files_with_dates.append((filename, first_time))
-
-    files_with_dates.sort(key=lambda x : x[1])
-
-    return [f for f, _ in files_with_dates]
-
-
 def get_time_origin(filename):
     """
     Parse time.units to find the start/origin date of the file. Return a
@@ -64,6 +43,21 @@ def get_time_origin(filename):
         date = dt.datetime.strptime(m.group(0), '%Y-%m-%d')
 
     return dt.date(date.year, date.month, date.day)
+
+
+def sort_by_date(forcing_files):
+    """
+    Sort list in increasing order of date.
+    """
+
+    files_with_dates = []
+    for filename in forcing_files:
+        first_time = get_time_origin(filename)
+        files_with_dates.append((filename, first_time))
+
+    files_with_dates.sort(key=lambda x : x[1])
+
+    return [f for f, _ in files_with_dates]
 
 
 class DaySeries:
