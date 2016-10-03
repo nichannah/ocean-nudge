@@ -12,6 +12,9 @@ data_tarball_url = 'http://s3-ap-southeast-2.amazonaws.com/dp-drop/ocean-nudge/t
 
 def convert_grib_to_netcdf(input_dir):
 
+    ret = sp.call(['which', 'cdo'])
+    assert ret == 0, 'Error: cdo not found.'
+
     godas_tab = os.path.join(input_dir, 'godas.tab')
 
     for f in glob.glob(input_dir + '/*.grb'):
