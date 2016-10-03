@@ -2,6 +2,8 @@
 
 Create ocean temperature and salt nudging and damping coefficient files. These files can used to nudge an either MOM or NEMO towards observations.
 
+Build status: [![Build Status](https://travis-ci.org/nicjhan/ocean-nudge.svg?branch=master)](https://travis-ci.org/nicjhan/ocean-nudge)
+
 ## Install
 
 This tool is written in Python and depends a few different Python packages. It also depends on
@@ -108,7 +110,7 @@ Combine the above regridded reanalysis files into a single nudging source file. 
 e.g. for MOM:
 ```
 $ time ../../../makenudge.py oras4_temp_2003_mom_grid.nc oras4_temp_2004_mom_grid.nc \
-    oras4_temp_2005_mom_grid.nc --base_year 2003
+    oras4_temp_2005_mom_grid.nc
 real    16m46.109s
 user    15m44.637s
 sys     3m56.738s
@@ -119,10 +121,15 @@ Note that this is a long-running operation, the nudging files can be big and tim
 For Nemo:
 ```
 $ ../../../makenudge.py --model_name NEMO --input_var_name votemper oras4_temp_2003_nemo_grid.nc \
-    oras4_temp_2004_nemo_grid.nc oras4_temp_2005_nemo_grid.nc --base_year 2003
+    oras4_temp_2004_nemo_grid.nc oras4_temp_2005_nemo_grid.nc
 ```
 
-This will output two files: \<input_var_name\>\_nomask.nc and resto.nc.
+This will output two files: \<input_var_name\>\_nomask.nc and resto.nc. In order to do temperature and salinity nudging this needs to be done twice, once for temperature (and above) and once for salinity. For example:
+
+```
+$ ../../../makenudge.py --model_name NEMO --input_var_name vosaline oras4_salt_2003_nemo_grid.nc \
+    oras4_salt_2004_nemo_grid.nc oras4_salt_2005_nemo_grid.nc
+```
 
 ## Step 4
 

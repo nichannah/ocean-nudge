@@ -30,7 +30,7 @@ Convert downloaded data to netCDF format. Unfortunately the GODAS pentad data is
 $ cdo -f nc -t test_data/godas.tab copy godas.P.20031231.grb godas.P.20031231.nc
 ```
 
-The 'godas.tab' file is metadata that describes the variable names, it can be downloaded from [here](http://www.nco.ncep.noaa.gov/pmb/docs/on388/table2.html#TABLE128) or a minimal version can be found in the test_data directory of this repository.
+The 'godas.tab' file is metadata that describes the variable names, it can be downloaded from [here](http://www.nco.ncep.noaa.gov/pmb/docs/on388/table2.html#TABLE128) or a minimal version can be found in the test data for this tool (http://s3-ap-southeast-2.amazonaws.com/dp-drop/ocean-nudge/test/test_data.tar.gz).
 
 We can convert them all in a bash for loop as follows:
 
@@ -42,11 +42,11 @@ $ for d in 20031231 20040105 20040110; do \
 
 ## Step 3.
 
-Regrid data to NEMO grid.
+Regrid data to NEMO grid, note that these commands are executed from within the test/test_data/input directory.
 
 ```{bash}
 $ for d in 20031231 20040105 20040110; do \
-    ./regrid.py GODAS godas.P.${d}.nc godas.P.${d}.nc godas.P.${d}.nc POT \
+    ../../../regridder/regrid.py GODAS godas.P.${d}.nc godas.P.${d}.nc godas.P.${d}.nc POT \
     NEMO coordinates.nc data_1m_potential_temperature_nomask.nc \
     godas_temp_${d}_nemo_grid.nc votemper --regrid_weights regrid_weights.nc; \
   done
@@ -58,11 +58,11 @@ Combine the above regridded reanalysis files into a single nudging source file.
 
 For Nemo:
 ```
-$ ./makenudge.py --model_name NEMO --input_var_name votemper
-    godas_temp_20031231_nemo_grid.nc godas_temp_20040105_nemo_grid.nc godas_temp_20040105_nemo_grid.nc  --base_year 2003
+$ ../../../makenudge.py --model_name NEMO --input_var_name votemper \
+    godas_temp_20031231_nemo_grid.nc godas_temp_20040105_nemo_grid.nc godas_temp_20040105_nemo_grid.nc
 ```
 
 ## Step 5.
 
-Same as for monthly data. FIXME, provide a link.
+Configure the model to use the newly created nudging file. This is the same as for monthly data, [see here](../README.md)
 

@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import numpy as np
 import tempfile
 import shlex
 import shutil
@@ -9,7 +10,6 @@ import subprocess as sp
 import re
 import datetime as dt
 import netCDF4 as nc
-
 
 def compress_netcdf_file(filename, compression_level=7):
     """
@@ -46,51 +46,58 @@ def sort_by_date(forcing_files):
     return [f for f, _ in files_with_dates]
 
 
+def get_time_origin(filename):
+    """
+    Parse time.units to find the start/origin date of the file. Return a
+    datetime.date object.
+    """
+
+    with nc.Dataset(filename) as f:
+        if f.variables.has_key('time_counter'):
+            time_var = f.variables['time_counter']
+        else:
+            time_var = f.variables['time']
+
+        assert('days since' in time_var.units)
+        m = re.search('\d{4}-\d{2}-\d{2}', time_var.units)
+        assert(m is not None)
+        date = dt.datetime.strptime(m.group(0), '%Y-%m-%d')
+
+    return dt.date(date.year, date.month, date.day)
+
+
 class DaySeries:
     """
-    A list of days and a start date / origin.
+    Pull days from files and arrange in an increasing sequence. Each day in the
+    sequence is the number of days since the start date. By default the start
+    date (or origin) is the start date of the earlies file.
     """
 
     def __init__(self, files):
 
         files = sort_by_date(files)
 
-        self.origin = self._get_time_origin(files[0])
+        # The origin is the origin of the first file.
+        self.origin = get_time_origin(files[0])
         self.days = []
 
         for filename in files:
             with nc.Dataset(filename) as f:
+                f_origin = get_time_origin(filename)
+
                 if f.variables.has_key('time_counter'):
                     time_var = f.variables['time_counter']
                 else:
                     time_var = f.variables['time']
 
-                self.days.extend(time_var[:])
+                days = time_var[:]
 
-    def _get_time_origin(self, filename):
-        """
-        Parse time.units to find the start/origin date of the file. Return a
-        datetime.date object.
-        """
+                # Days variable is relative to f_origin, we need to adjust so
+                # that it is relative to self.origin
+                base_delta = f_origin - self.origin
+                assert base_delta >= dt.timedelta(0)
 
-        with nc.Dataset(filename) as f:
-            if f.variables.has_key('time_counter'):
-                time_var = f.variables['time_counter']
-            else:
-                time_var = f.variables['time']
+                self.days.extend(days + base_delta.days)
 
-            assert('days since' in time_var.units)
-            m = re.search('\d{4}-\d{2}-\d{2}', time_var.units)
-            assert(m is not None)
-            date = dt.datetime.strptime(m.group(0), '%Y-%m-%d')
-
-        return dt.date(date.year, date.month, date.day)
-
-    def normalise_to_year_start(self):
-        """
-        """
-
-        date = self.origin + dt.timedelta(self.days[0])
-        first_day = date.day
-
-        return self.days - self.days[0] + first_day
+        assert np.all(np.diff(self.days) > 1), \
+                'Error: One or more dates and/or input files are repeated.'

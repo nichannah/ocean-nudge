@@ -11,26 +11,7 @@ import multiprocessing as mp
 import netCDF4 as nc
 
 from file_util import create_mom_nudging_file, create_nemo_nudging_file
-from lib_util import compress_netcdf_file, sort_by_date, DaySeries
-
-"""
-Combine forcing fields to create nudging files that can be used to nudge salt
-and temperature within MOM or NEMO.
-
-Example use:
-
-./makenudge.py ocean.nc temp -d 1e-08
-
-Output for MOM:
-
-temp_sponge_coeff.nc
-temp_sponge.nc
-
-Output for NEMO:
-
-Assumptions:
-- The base files are monthly means.
-"""
+from lib_util import compress_netcdf_file, sort_by_date, DaySeries, get_time_origin
 
 def make_nudging_field(forcing_files, var_name, output_file,
                        start_date, monthly_resolution):
@@ -49,7 +30,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
     output_idx = 0
 
     day_series = DaySeries(forcing_files)
-    new_days = day_series.normalise_to_year_start()
+    days = day_series.days
 
     for file in forcing_files:
         with nc.Dataset(file, 'r') as ff:
@@ -62,7 +43,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
                     tmp_var -= 273.15
 
                 of.variables[var_name][output_idx, :] = tmp_var[:]
-                of.variables[time_name][output_idx] = new_days[output_idx]
+                of.variables[time_name][output_idx] = days[output_idx]
                 output_idx += 1
 
     if var_name == 'temp':
@@ -89,12 +70,11 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
         for t in range(time_var.shape[0]):
             of.variables['coeff'][t, :] = damp_coeff
 
+def parse_date(date_str):
+    """
+    Return a date time object from a date string.
+    """
 
-def check_dates(start_date, forcing_files):
-    """
-    Run various checks on consistency of dates.
-    """
-    return None
 
 def main():
 
@@ -109,25 +89,26 @@ def main():
                         help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
                         help="Value for the damping coefficient.")
-    parser.add_argument("--base_year", default=1, type=int,
-                        help="The start year of the nudging output. Default is 1 (0001)")
-    parser.add_argument("--base_month", default=1, type=int,
-                        help="The start month of the nudging output. Default is 1 (January)")
+    parser.add_argument("--start_year", default=None, type=int,
+                        help="""
+                        The start year of the nudging output. The default is to
+                        use the start year of the earliest forcing file.
+                        """)
     parser.add_argument("--resolution", default=0,
                         help="""The number of intra-monthly points created by
                                 interpolating between forcing inputs.""")
     args = parser.parse_args()
 
     assert args.model_name == 'MOM' or args.model_name == 'NEMO'
+    assert args.resolution == 0
 
-    start_date = dt.date(args.base_year, args.base_month, 1)
     var_name = args.input_var_name
 
     forcing_files = sort_by_date(args.forcing_files)
-    err = check_dates(start_date, forcing_files)
-    if err is not None:
-        print('Error: {}'.format(err))
-        return 1
+
+    start_date = get_time_origin(forcing_files[0])
+    if args.start_year is not None:
+        start_date = dt.date(args.start_year, start_date.month, start_date.day)
 
     if args.model_name == 'MOM':
         nudging_file = var_name + '_sponge.nc'
