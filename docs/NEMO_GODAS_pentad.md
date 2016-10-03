@@ -6,9 +6,20 @@
 Download GODAS pentad data from (here)[http://cfs.ncep.noaa.gov/cfs/godas/pentad/]:
 
 ```{bash}
+$ mkdir -p test/test_data/input
+$ cd test/test_data/input
 $ wget http://cfs.ncep.noaa.gov/cfs/godas/pentad/2003/godas.P.20031231.grb
 $ wget http://cfs.ncep.noaa.gov/cfs/godas/pentad/2004/godas.P.20040105.grb
 $ wget http://cfs.ncep.noaa.gov/cfs/godas/pentad/2004/godas.P.20040110.grb
+```
+
+Alternatively download the test dataset for this tool.
+
+```{bash}
+$ cd test/
+$ wget http://s3-ap-southeast-2.amazonaws.com/dp-drop/ocean-nudge/test/test_data.tar.gz
+$ tar zxvf test_data.tar.gz
+$ cd test_data/input
 ```
 
 ## Step 2.

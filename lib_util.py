@@ -34,7 +34,12 @@ def sort_by_date(forcing_files):
     files_with_dates = []
     for filename in forcing_files:
         with nc.Dataset(filename) as f:
-            files_with_dates.append((filename, f.variables['time'][0]))
+            if f.variables.has_key('time_counter'):
+                first_time = f.variables['time_counter'][0]
+            else:
+                first_time = f.variables['time'][0]
+
+            files_with_dates.append((filename, first_time))
 
     files_with_dates.sort(key=lambda x : x[1])
 
@@ -55,7 +60,12 @@ class DaySeries:
 
         for filename in files:
             with nc.Dataset(filename) as f:
-                self.days.extend(f.variables['time'][:])
+                if f.variables.has_key('time_counter'):
+                    time_var = f.variables['time_counter']
+                else:
+                    time_var = f.variables['time']
+
+                self.days.extend(time_var[:])
 
     def _get_time_origin(self, filename):
         """
@@ -64,7 +74,11 @@ class DaySeries:
         """
 
         with nc.Dataset(filename) as f:
-            time_var = f.variables['time']
+            if f.variables.has_key('time_counter'):
+                time_var = f.variables['time_counter']
+            else:
+                time_var = f.variables['time']
+
             assert('days since' in time_var.units)
             m = re.search('\d{4}-\d{2}-\d{2}', time_var.units)
             assert(m is not None)

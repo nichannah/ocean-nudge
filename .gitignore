@@ -1,5 +1,7 @@
 # My additions
-test_data
+test/test_data
+test/*.gz
+*.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

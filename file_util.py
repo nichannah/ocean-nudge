@@ -1,6 +1,8 @@
 
 import netCDF4 as nc
 
+# FIXME: these are really just copies of the forcing_file input.
+
 def create_mom_nudging_file(filename, var_name, var_longname,
                             var_units, start_date, forcing_file):
 
@@ -53,21 +55,22 @@ def create_mom_nudging_file(filename, var_name, var_longname,
 def create_nemo_nudging_file(filename, var_name, var_longname,
                               var_units, start_date, forcing_file):
 
+    ff = nc.Dataset(forcing_file)
     f = nc.Dataset(filename, 'w')
 
-    f.createDimension('y', ocean_grid.num_lat_points)
-    f.createDimension('x', ocean_grid.num_lon_points)
-    f.createDimension('z', ocean_grid.num_levels)
+    f.createDimension('y', ff.variables['nav_lon'].shape[0])
+    f.createDimension('x', ff.variables['nav_lon'].shape[1])
+    f.createDimension('z', ff.variables['depth'].size)
     f.createDimension('time_counter')
 
     lats = f.createVariable('nav_lat', 'f8', ('y', 'x'))
-    lats[:] = ocean_grid.y_t[:]
+    lats[:] = ff.variables['nav_lat'][:]
 
     lons = f.createVariable('nav_lon', 'f8', ('y', 'x'))
-    lons[:] = ocean_grid.x_t[:]
+    lons[:] = ff.variables['nav_lon'][:]
 
     depth = f.createVariable('depth', 'f8', ('z'))
-    depth[:] = ocean_grid.z[:]
+    depth[:] = ff.variables['depth'][:]
 
     time = f.createVariable('time_counter', 'f8', ('time_counter'))
     time.long_name = 'time'

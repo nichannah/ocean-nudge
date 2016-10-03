@@ -40,6 +40,12 @@ def make_nudging_field(forcing_files, var_name, output_file,
     """
 
     of = nc.Dataset(output_file, 'r+')
+
+    if of.variables.has_key('time_counter'):
+        time_name = 'time_counter'
+    else:
+        time_name = 'time'
+
     output_idx = 0
 
     day_series = DaySeries(forcing_files)
@@ -47,7 +53,8 @@ def make_nudging_field(forcing_files, var_name, output_file,
 
     for file in forcing_files:
         with nc.Dataset(file, 'r') as ff:
-            time_var = ff.variables['time']
+            time_var = ff.variables[time_name]
+
             for t in range(time_var.shape[0]):
                 tmp_var = ff.variables[var_name][t, :]
                 # Convert to degrees C, used internally by the model.
@@ -55,7 +62,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
                     tmp_var -= 273.15
 
                 of.variables[var_name][output_idx, :] = tmp_var[:]
-                of.variables['time'][output_idx] = new_days[output_idx]
+                of.variables[time_name][output_idx] = new_days[output_idx]
                 output_idx += 1
 
     if var_name == 'temp':
@@ -73,7 +80,12 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
     with nc.Dataset(output_file, 'r+') as of:
         of.renameVariable(variable, 'coeff')
 
-        time_var = of.variables['time']
+        if of.variables.has_key('time_counter'):
+            time_name = 'time_counter'
+        else:
+            time_name = 'time'
+
+        time_var = of.variables[time_name]
         for t in range(time_var.shape[0]):
             of.variables['coeff'][t, :] = damp_coeff
 
@@ -117,7 +129,7 @@ def main():
         print('Error: {}'.format(err))
         return 1
 
-    if args.model == MOM:
+    if args.model_name == 'MOM':
         nudging_file = var_name + '_sponge.nc'
         coeff_file = '{}_sponge_coeff.nc'.format(var_name)
     else:
@@ -130,7 +142,7 @@ def main():
                   'Please move or remove', file=sys.stderr)
             return 1
 
-    if args.model == MOM:
+    if args.model_name == 'MOM':
         create_mom_nudging_file(nudging_file, var_name, '', '',
                                 start_date,
                                 args.forcing_files[0])
