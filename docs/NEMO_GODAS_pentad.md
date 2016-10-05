@@ -62,6 +62,14 @@ $ ../../../makenudge.py --model_name NEMO --input_var_name votemper \
     godas_temp_20031231_nemo_grid.nc godas_temp_20040105_nemo_grid.nc godas_temp_20040105_nemo_grid.nc
 ```
 
+## Step 4.1
+
+There is a test which does steps 1-4 above using example data:
+
+```
+$ python -m pytest -s -m slow test/
+```
+
 ## Step 5.
 
 Configure the model to use the newly created nudging file. This is the same as for monthly data, [see here](../README.md)

@@ -85,6 +85,8 @@ def main():
                         This is expected to contain monthly means.""")
     parser.add_argument("--input_var_name", default='temp',
                         help="")
+    parser.add_argument("--output_dir", default='./',
+                        help="Directory where output files will be placed.")
     parser.add_argument("--model_name", default='MOM',
                         help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
@@ -117,11 +119,8 @@ def main():
         nudging_file = var_name + '_nomask.nc'
         coeff_file = 'resto.nc'
 
-    for filename in [nudging_file, coeff_file]:
-        if os.path.exists(filename):
-            print('Error: output file {} exists. '.format(filename) + \
-                  'Please move or remove', file=sys.stderr)
-            return 1
+    nudging_file = os.path.join(args.output_dir, nudging_file)
+    coeff_file = os.path.join(args.output_dir, coeff_file)
 
     if args.model_name == 'MOM':
         create_mom_nudging_file(nudging_file, var_name, '', '',
