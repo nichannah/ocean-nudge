@@ -38,28 +38,25 @@ def make_nudging_field(forcing_files, var_name, output_file,
 
             for t in range(time_var.shape[0]):
                 tmp_var = ff.variables[var_name][t, :]
-                # Convert to degrees C, used internally by the model.
-                if var_name == 'temp' and 'degrees K' in ff.variables[var_name].units:
-                    tmp_var -= 273.15
-
                 of.variables[var_name][output_idx, :] = tmp_var[:]
                 of.variables[time_name][output_idx] = days[output_idx]
                 output_idx += 1
 
-    if var_name == 'temp':
-        # Check temperature units.
-        assert(np.max(of.variables[var_name][0, 0, :, :]) < 40.0)
-        of.variables[var_name].units = 'degrees C'
-
     of.close()
 
 
-def make_damp_coeff_field(output_file, damp_coeff, variable):
+def make_damp_coeff_field(output_file, damp_coeff, variable, model_name):
     """
     Make the damping coeffiecient field.
     """
     with nc.Dataset(output_file, 'r+') as of:
-        of.renameVariable(variable, 'coeff')
+        if model_name == 'MOM':
+            coeff_name = 'coeff'
+        else:
+            assert model_name == 'NEMO'
+            coeff_name = 'resto'
+
+        of.renameVariable(variable, coeff_name)
 
         if of.variables.has_key('time_counter'):
             time_name = 'time_counter'
@@ -68,7 +65,7 @@ def make_damp_coeff_field(output_file, damp_coeff, variable):
 
         time_var = of.variables[time_name]
         for t in range(time_var.shape[0]):
-            of.variables['coeff'][t, :] = damp_coeff
+            of.variables[coeff_name][t, :] = damp_coeff
 
 def parse_date(date_str):
     """
@@ -102,9 +99,14 @@ def main():
     args = parser.parse_args()
 
     assert args.model_name == 'MOM' or args.model_name == 'NEMO'
-    assert args.resolution == 0
 
     var_name = args.input_var_name
+
+    if args.model_name == 'MOM':
+        assert var_name == 'temp' or var_name == 'salt'
+
+    if args.model_name == 'NEMO':
+        assert var_name == 'votemper' or var_name == 'vosaline'
 
     forcing_files = sort_by_date(args.forcing_files)
 
@@ -133,8 +135,20 @@ def main():
     make_nudging_field(args.forcing_files, var_name, nudging_file,
                        start_date, args.resolution)
 
+    # Sort out units. FIXME: units are missing in netcdf, better way to do this.
+    with nc.Dataset(nudging_file, 'r+') as f:
+        if var_name == 'temp' or var_name == 'votemper':
+            if np.max(f.variables[var_name][:]) > 273.0:
+                f.variables[var_name][:] -= 273.15
+
+                assert np.min(f.variables[var_name][:]) > -10.0 
+
+        if var_name == 'salt' or var_name == 'vosaline':
+            if np.max(f.variables[var_name][:]) < 1.0:
+                f.variables[var_name][:] *= 1000
+
     shutil.copy(nudging_file, coeff_file)
-    make_damp_coeff_field(coeff_file, args.damp_coeff, var_name)
+    make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name)
 
     pool = mp.Pool(2)
     pool.map(compress_netcdf_file, [nudging_file, coeff_file])
