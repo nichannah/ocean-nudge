@@ -14,7 +14,7 @@ from file_util import create_mom_nudging_file, create_nemo_nudging_file
 from lib_util import compress_netcdf_file, sort_by_date, DaySeries, get_time_origin
 
 def make_nudging_field(forcing_files, var_name, output_file,
-                       start_date, monthly_resolution):
+                       start_date):
     """
     Combine forcing files into a nudging field/file. This may invlolve
     increasing the time resolution of the forcing using linear interpolation.
@@ -67,25 +67,39 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name):
         for t in range(time_var.shape[0]):
             of.variables[coeff_name][t, :] = damp_coeff
 
-def parse_date(date_str):
-    """
-    Return a date time object from a date string.
-    """
+
+def guess_input_var_name(forcing_file, tracer):
+
+    if tracer == 'temp':
+        possible_vars = ['temp', 'votemper', 'POT', 'pottmp']
+    else:
+        assert tracer == 'salt'
+        possible_vars = ['salt', 'vosaline', 'SALTY']
+
+    with nc.Dataset(forcing_file) as f:
+        for pv in possible_vars:
+            if f.variables.has_key(pv):
+                return pv
+
+    return None
 
 
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("forcing_files", nargs='+',
+    parser.add_argument("model_name",
+                        help="Name of the model to nudge, can be MOM or NEMO.")
+    parser.add_argument('nudging_var',
+                        help="Variable to nudge. Must be 'salt' or 'temp'.")
+    parser.add_argument("--forcing_files", nargs='+', default=None,
                         help="""The files containing salt or temp
                         forcing variables.
-                        This is expected to contain monthly means.""")
-    parser.add_argument("--input_var_name", default='temp',
-                        help="")
+                        This is expected to contain monthly means or pentad.""")
+    parser.add_argument("--input_var_name", default=None, help="""
+                        The input variable name. Default is to guess
+                        based on the nudging_var option""")
     parser.add_argument("--output_dir", default='./',
                         help="Directory where output files will be placed.")
-    parser.add_argument("--model_name", default='MOM',
-                        help="Name of the model to nudge, can be MOM or NEMO.")
     parser.add_argument("--damp_coeff", type=float, default=1e-5,
                         help="Value for the damping coefficient.")
     parser.add_argument("--start_year", default=None, type=int,
@@ -93,14 +107,13 @@ def main():
                         The start year of the nudging output. The default is to
                         use the start year of the earliest forcing file.
                         """)
-    parser.add_argument("--resolution", default=0,
-                        help="""The number of intra-monthly points created by
-                                interpolating between forcing inputs.""")
     args = parser.parse_args()
 
     assert args.model_name == 'MOM' or args.model_name == 'NEMO'
+    assert args.forcing_files is not None
 
-    var_name = args.input_var_name
+    var_name = guess_input_var_name(args.forcing_files[0], args.nudging_var)
+    assert var_name is not None
 
     if args.model_name == 'MOM':
         assert var_name == 'temp' or var_name == 'salt'
@@ -115,6 +128,7 @@ def main():
         start_date = dt.date(args.start_year, start_date.month, start_date.day)
 
     if args.model_name == 'MOM':
+        assert var_name == 'temp' or var_name == 'salt'
         nudging_file = var_name + '_sponge.nc'
         coeff_file = '{}_sponge_coeff.nc'.format(var_name)
     else:
@@ -132,8 +146,7 @@ def main():
         create_nemo_nudging_file(nudging_file, var_name, '', '',
                                 start_date,
                                 args.forcing_files[0])
-    make_nudging_field(args.forcing_files, var_name, nudging_file,
-                       start_date, args.resolution)
+    make_nudging_field(args.forcing_files, var_name, nudging_file, start_date)
 
     # Sort out units. FIXME: units are missing in netcdf, better way to do this.
     with nc.Dataset(nudging_file, 'r+') as f:
