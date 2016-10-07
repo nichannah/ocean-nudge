@@ -26,13 +26,10 @@ def convert_grib_to_netcdf(input_dir, infiles, output_dir):
 
     return outfiles
 
-def regrid_to_nemo(regridder, pentad_files, input_dir, output_dir, dest_var):
+def regrid_to_nemo(regridder, pentad_files, reanalysis_var, input_dir, output_dir):
 
     output_files = [os.path.join(output_dir, os.path.basename(f)) \
-                        + dest_var + '.nc' for f in pentad_files]
-
-    hgrid = os.path.join(input_dir, 'coordinates.nc')
-    vgrid = os.path.join(input_dir, 'data_1m_potential_temperature_nomask.nc')
+                        + reanalysis_var + '.nc' for f in pentad_files]
 
     weights = os.path.join(output_dir, 'regrid_weights.nc')
 
@@ -43,9 +40,8 @@ def regrid_to_nemo(regridder, pentad_files, input_dir, output_dir, dest_var):
         if os.path.exists(outf):
             os.remove(outf)
 
-        ret = sp.call([regridder, 'GODAS', inf, inf, inf, 'POT',
-                       'NEMO', hgrid, vgrid, outf, dest_var,
-                        '--regrid_weights', weights])
+        ret = sp.call([regridder, 'GODAS', inf, reanalysis_var,
+                       'NEMO', outf, '--regrid_weights', weights])
         assert ret == 0
 
     return output_files
@@ -57,11 +53,11 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
 
     # Regrid pendad files to NEMO grid.
     my_dir = os.path.dirname(os.path.realpath(__file__))
-    regridder = os.path.join(my_dir, '../regridder/', 'regrid.py')
-    nemo_temp_files = regrid_to_nemo(regridder, pentad_files,
-                                     input_dir, output_dir, 'votemper')
-    nemo_salt_files = regrid_to_nemo(regridder, pentad_files,
-                                     input_dir, output_dir, 'vosaline')
+    regridder = os.path.join(my_dir, '../', 'rere.py')
+    nemo_temp_files = regrid_to_nemo(regridder, pentad_files, 'temp',
+                                     input_dir, output_dir)
+    nemo_salt_files = regrid_to_nemo(regridder, pentad_files, 'salt',
+                                     input_dir, output_dir)
 
     filenames = ['votemper_nomask.nc', 'vosaline_nomask.nc', 'resto.nc']
     output_files = [os.path.join(output_dir, fn) for fn in filenames]
@@ -71,11 +67,11 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
 
     # Create the nudging source files.
     makenudge = os.path.join(my_dir, '../', 'makenudge.py')
-    ret = sp.call([makenudge, '--model_name', 'NEMO', '--input_var_name',
-                   'votemper', '--output_dir', output_dir] + nemo_temp_files)
+    ret = sp.call([makenudge, 'NEMO', 'temp', '--output_dir', output_dir,
+                   '--forcing_files'] + nemo_temp_files)
     assert ret == 0
-    ret = sp.call([makenudge, '--model_name', 'NEMO', '--input_var_name',
-                   'vosaline', '--output_dir', output_dir] + nemo_salt_files)
+    ret = sp.call([makenudge, 'NEMO', 'salt', '--output_dir', output_dir,
+                   '--forcing_files'] + nemo_salt_files)
     assert ret == 0
 
     # Check that outputs exist.
@@ -83,7 +79,7 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
         assert os.path.exists(outf)
 
 
-class TestRegrid():
+class TestNudge():
 
     @pytest.fixture
     def input_dir(self):

@@ -14,6 +14,9 @@ This tool is written in Python and depends a few different Python packages. It a
 Download ocean-nudge:
 ```{bash}
 $ git clone --recursive https://github.com/nicjhan/ocean-nudge.git
+$ cd ocean-nudge
+$ wget http://s3-ap-southeast-2.amazonaws.com/dp-drop/ocean-nudge/grid_defs.tar.gz
+$ tar zxvf grid_defs.tar.gz
 ```
 
 ## Python dependencies
@@ -71,23 +74,22 @@ $ cd test_data/input
 
 ## Step 2
 
-Regrid the reanalysis files to the model grid. Do this with the ocean-regrid tool found in the regridder directory. Additional documentation can be found here [here](https://github.com/nicjhan/ocean-regrid).
+Regrid the reanalysis files to the model grid. This can be done with rere.py (reanalysis regridder) found in this repository.
 
 The following commands assume a working directory of test/test_data/input.
 
 For example, for MOM:
 ```{bash}
-$ ../../../regridder/regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_2004_grid_T.nc thetao \
-        MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_on_mom_grid.nc temp \
-        --dest_mask ocean_mask.nc --regrid_weights oras4_mom_regrid_weights.nc
+$ cd test/test_data/input
+$ ../../../rere.py ORAS4 thetao_oras4_1m_2004_grid_T.nc thetao \
+        MOM oras4_temp_on_mom_grid.nc  --regrid_weights oras4_mom_regrid_weights.nc
 ```
 
 We can use a bash for-loop to regrid multiple files with a single command:
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../regridder/regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
-        MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_${i}_mom_grid.nc temp \
-        --dest_mask ocean_mask.nc --regrid_weights oras4_mom_regrid_weights.nc;
+    ../../../rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
+        MOM oras4_temp_${i}_mom_grid.nc --regrid_weights oras4_mom_regrid_weights.nc;
 done
 ```
 
@@ -95,13 +97,12 @@ And for NEMO:
 
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../regridder/regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
-        NEMO coordinates.nc data_1m_potential_temperature_nomask.nc oras4_temp_${i}_nemo_grid.nc votemper \
-        --regrid_weights oras4_nemo_regrid_weights.nc; \
+    ../../../rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
+        NEMO oras4_temp_${i}_nemo_grid.nc --regrid_weights oras4_nemo_regrid_weights.nc;
 done
 ```
 
-Note that in this case because the --regrid_weights option is used the computationally expensive part of the regridding only done once and the whole operation should be relatively fast. It can be sped up further by using the --use_mpi option.
+Note that in this case because the --regrid_weights option is used the computationally expensive part of the regridding only done once and the whole operation should be relatively fast.
 
 ## Step 3
 
@@ -109,8 +110,8 @@ Combine the above regridded reanalysis files into a single nudging source file. 
 
 e.g. for MOM:
 ```
-$ time ../../../makenudge.py oras4_temp_2003_mom_grid.nc oras4_temp_2004_mom_grid.nc \
-    oras4_temp_2005_mom_grid.nc
+$ time ../../../makenudge.py MOM temp --forcing_files oras4_temp_2003_mom_grid.nc
+    oras4_temp_2004_mom_grid.nc oras4_temp_2005_mom_grid.nc
 real    16m46.109s
 user    15m44.637s
 sys     3m56.738s
@@ -120,14 +121,15 @@ Note that this is a long-running operation, the nudging files can be big and tim
 
 For Nemo:
 ```
-$ ../../../makenudge.py --model_name NEMO --input_var_name votemper oras4_temp_2003_nemo_grid.nc \
-    oras4_temp_2004_nemo_grid.nc oras4_temp_2005_nemo_grid.nc
+$ ../../../makenudge.py NEMO temp --forcing_files \
+    oras4_temp_2003_nemo_grid.nc oras4_temp_2004_nemo_grid.nc \
+    oras4_temp_2005_nemo_grid.nc
 ```
 
 This will output two files: \<input_var_name\>\_nomask.nc and resto.nc. In order to do temperature and salinity nudging this needs to be done twice, once for temperature (and above) and once for salinity. For example:
 
 ```
-$ ../../../makenudge.py --model_name NEMO --input_var_name vosaline oras4_salt_2003_nemo_grid.nc \
+$ ../../../makenudge.py NEMO salt --forcing_files oras4_salt_2003_nemo_grid.nc \
     oras4_salt_2004_nemo_grid.nc oras4_salt_2005_nemo_grid.nc
 ```
 
