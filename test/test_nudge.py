@@ -68,10 +68,10 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
     # Create the nudging source files.
     makenudge = os.path.join(my_dir, '../', 'makenudge.py')
     ret = sp.call([makenudge, 'NEMO', 'temp', '--output_dir', output_dir,
-                   '--forcing_files'] + nemo_temp_files)
+                   '--domain', 'GODAS', '--forcing_files'] + nemo_temp_files)
     assert ret == 0
     ret = sp.call([makenudge, 'NEMO', 'salt', '--output_dir', output_dir,
-                   '--forcing_files'] + nemo_salt_files)
+                   '--domain', 'GODAS', '--forcing_files'] + nemo_salt_files)
     assert ret == 0
 
     # Check that outputs exist.

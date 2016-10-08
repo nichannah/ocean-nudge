@@ -45,10 +45,14 @@ def make_nudging_field(forcing_files, var_name, output_file,
     of.close()
 
 
-def make_damp_coeff_field(output_file, damp_coeff, variable, model_name):
+def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_name):
     """
     Make the damping coeffiecient field.
     """
+
+    def find_nearest_index(array, value):
+        return (np.abs(array - value)).argmin()
+
     with nc.Dataset(output_file, 'r+') as of:
         if model_name == 'MOM':
             coeff_name = 'coeff'
@@ -65,7 +69,18 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name):
 
         time_var = of.variables[time_name]
         for t in range(time_var.shape[0]):
-            of.variables[coeff_name][t, :] = damp_coeff
+            if model_name == 'MOM' and domain_name == 'GODAS':
+                of.variables[coeff_name][t, :] = 0.0
+                # GODAS domain
+                # slat = -74.5
+                # nlat = 64.0
+                # depth = 4478.0
+                of.variables[coeff_name][t, :44, 64:830, :] = damp_coeff
+            elif model_name == 'NEMO' and domain_name == 'GODAS':
+                of.variables[coeff_name][t, :] = 0.0
+                of.variables[coeff_name][t, :29, 8:129, :] = damp_coeff
+            else:
+                of.variables[coeff_name][t, :] = damp_coeff
 
 
 def guess_input_var_name(forcing_file, tracer):
@@ -83,6 +98,16 @@ def guess_input_var_name(forcing_file, tracer):
 
     return None
 
+def get_domain(domain_name, model_name):
+    if args.domain == 'ORAS4':
+        slat = -78.0
+        nlat = 89.5
+        depth = 5350.0
+
+    if args.domain == 'GODAS':
+        slat = -74.5
+        nlat = 64.0
+        depth = 4478.0
 
 def main():
 
@@ -100,8 +125,12 @@ def main():
                         based on the nudging_var option""")
     parser.add_argument("--output_dir", default='./',
                         help="Directory where output files will be placed.")
-    parser.add_argument("--damp_coeff", type=float, default=1e-5,
+    parser.add_argument("--damp_coeff", type=float, default=(1.0 / (86400 * 5.)),
                         help="Value for the damping coefficient.")
+    parser.add_argument("--domain", help="""
+                        The domain over which to do damping/nudging.
+                        Allowed values are GODAS, ORAS4, GLOBAL.""",
+                        default='GODAS')
     parser.add_argument("--start_year", default=None, type=int,
                         help="""
                         The start year of the nudging output. The default is to
@@ -111,6 +140,8 @@ def main():
 
     assert args.model_name == 'MOM' or args.model_name == 'NEMO'
     assert args.forcing_files is not None
+    assert args.domain == 'GODAS' or args.domain == 'ORAS4' or \
+        args.domain == 'GLOBAL'
 
     var_name = guess_input_var_name(args.forcing_files[0], args.nudging_var)
     assert var_name is not None
@@ -161,7 +192,8 @@ def main():
                 f.variables[var_name][:] *= 1000
 
     shutil.copy(nudging_file, coeff_file)
-    make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name)
+    make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name,
+                          args.domain)
 
     pool = mp.Pool(2)
     pool.map(compress_netcdf_file, [nudging_file, coeff_file])
