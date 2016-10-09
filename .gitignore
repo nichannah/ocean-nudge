@@ -1,7 +1,9 @@
 # My additions
 test/test_data
+test/example_output
 test/*.gz
 *.swp
+release/makenudge*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -33,7 +35,6 @@ var/
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
 
 # Installer logs
 pip-log.txt
