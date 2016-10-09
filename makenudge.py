@@ -9,9 +9,18 @@ import datetime as dt
 import numpy as np
 import multiprocessing as mp
 import netCDF4 as nc
+from scipy import ndimage as nd
 
 from file_util import create_mom_nudging_file, create_nemo_nudging_file
 from lib_util import compress_netcdf_file, sort_by_date, DaySeries, get_time_origin
+
+def smooth_all(data):
+
+    sigma = (2, 3, 3)
+
+    new_data = np.copy(data)
+    new_data[:, :, :] = nd.filters.gaussian_filter(data[:, :, :], sigma)
+    return new_data
 
 def make_nudging_field(forcing_files, var_name, output_file,
                        start_date):
@@ -53,6 +62,10 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
     def find_nearest_index(array, value):
         return (np.abs(array - value)).argmin()
 
+    if model_name == 'NEMO':
+        with nc.Dataset('grid_defs/mesh_mask.nc') as f:
+            nemo_mask = f.variables['tmask'][0, :, :, :]
+
     with nc.Dataset(output_file, 'r+') as of:
         if model_name == 'MOM':
             coeff_name = 'coeff'
@@ -79,6 +92,8 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
             elif model_name == 'NEMO' and domain_name == 'GODAS':
                 of.variables[coeff_name][t, :] = 0.0
                 of.variables[coeff_name][t, :29, 8:129, :] = damp_coeff
+                of.variables[coeff_name][t, :, :, :] *= nemo_mask[:, :, :]
+
             else:
                 of.variables[coeff_name][t, :] = damp_coeff
 
@@ -179,24 +194,28 @@ def main():
                                 args.forcing_files[0])
     make_nudging_field(args.forcing_files, var_name, nudging_file, start_date)
 
-    # Sort out units. FIXME: units are missing in netcdf, better way to do this.
+    # Sort out units. FIXME: units are missing in netcdf converted from GODAS
+    # pentad, better way to do this.
     with nc.Dataset(nudging_file, 'r+') as f:
         if var_name == 'temp' or var_name == 'votemper':
             if np.max(f.variables[var_name][:]) > 273.0:
                 f.variables[var_name][:] -= 273.15
 
-                assert np.min(f.variables[var_name][:]) > -10.0 
+                assert np.min(f.variables[var_name][:]) > -10.0
+                f.variables[var_name].units = 'C'
+                f.variables[var_name].long_name = 'Potential temperature'
 
         if var_name == 'salt' or var_name == 'vosaline':
             if np.max(f.variables[var_name][:]) < 1.0:
                 f.variables[var_name][:] *= 1000
 
+                assert np.max(f.variables[var_name][:]) < 50.0
+                f.variables[var_name].units = 'psu'
+                f.variables[var_name].long_name = 'Salinity'
+
     shutil.copy(nudging_file, coeff_file)
     make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name,
                           args.domain)
-
-    pool = mp.Pool(2)
-    pool.map(compress_netcdf_file, [nudging_file, coeff_file])
 
 if __name__ == "__main__":
     sys.exit(main())
