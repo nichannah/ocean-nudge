@@ -14,7 +14,7 @@ This tool is written in Python and depends a few different Python packages. It a
 Download ocean-nudge:
 ```{bash}
 $ git clone --recursive https://github.com/nicjhan/ocean-nudge.git
-$ cd ocean-nudge
+$ cd ocean-nudge/regridder/
 $ wget http://s3-ap-southeast-2.amazonaws.com/dp-drop/ocean-nudge/grid_defs.tar.gz
 $ tar zxvf grid_defs.tar.gz
 ```
@@ -74,21 +74,32 @@ $ cd test_data/input
 
 ## Step 2
 
-Regrid the reanalysis files to the model grid. This can be done with rere.py (reanalysis regridder) found in this repository.
+Regrid the reanalysis files to the model grid. This can be done with regrid_simple.py or regrid.py found in the regridder directory.
 
 The following commands assume a working directory of test/test_data/input.
 
 For example, for MOM:
 ```{bash}
 $ cd test/test_data/input
-$ ../../../rere.py ORAS4 thetao_oras4_1m_2004_grid_T.nc thetao \
+$ ../../../regridder/regrid_simple.py ORAS4 thetao_oras4_1m_2004_grid_T.nc thetao \
         MOM oras4_temp_on_mom_grid.nc  --regrid_weights oras4_mom_regrid_weights.nc
+```
+
+The format for the regrid.py command is similar to the above but the location of all grid definition files must be given:
+
+```{bash}
+$ cd test/test_data/input
+$ ../../../regridder/regrid.py --help
+$ ../../../regridder/regrid.py ORAS4 coordinates_grid_T.nc coordinates_grid_T.nc \
+    thetao_oras4_1m_2004_grid_T.nc thetao \
+    MOM ocean_hgrid.nc ocean_vgrid.nc oras4_temp_on_mom_grid.nc temp \
+    --dest_mask ocean_mask.nc  --regrid_weights oras4_mom_regrid_weights.nc
 ```
 
 We can use a bash for-loop to regrid multiple files with a single command:
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
+    ../../../regridder/rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
         MOM oras4_temp_${i}_mom_grid.nc --regrid_weights oras4_mom_regrid_weights.nc;
 done
 ```
@@ -97,7 +108,7 @@ And for NEMO:
 
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
+    ../../../regridder/rere.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
         NEMO oras4_temp_${i}_nemo_grid.nc --regrid_weights oras4_nemo_regrid_weights.nc;
 done
 ```
@@ -110,14 +121,11 @@ Combine the above regridded reanalysis files into a single nudging source file. 
 
 e.g. for MOM:
 ```
-$ time ../../../makenudge.py MOM temp --forcing_files oras4_temp_2003_mom_grid.nc
+$ ../../../makenudge.py MOM temp --forcing_files oras4_temp_2003_mom_grid.nc
     oras4_temp_2004_mom_grid.nc oras4_temp_2005_mom_grid.nc
-real    16m46.109s
-user    15m44.637s
-sys     3m56.738s
 ```
 
-Note that this is a long-running operation, the nudging files can be big and time consuming compression is needed. For MOM there will be two kinds of otuput, the actual nudging source file which ends in \_sponge.nc and the 3D relaxation coefficient file which ends in \_coeff_sponge.nc.
+For MOM there will be two kinds of otuput, the actual nudging source file which ends in \_sponge.nc and the 3D relaxation coefficient file which ends in \_coeff_sponge.nc.
 
 For Nemo:
 ```
@@ -135,7 +143,7 @@ $ ../../../makenudge.py NEMO salt --forcing_files oras4_salt_2003_nemo_grid.nc \
 
 ## Step 4
 
-Configure the model to use the newly created nudging file. See below for instructions for both MOM and NEMO.
+Configure the model to use the newly created nudging file.
 
 ### MOM
 

@@ -47,10 +47,12 @@ Regrid data to NEMO grid, note that these commands are executed from within the 
 ```{bash}
 $ cd test/test_data/input
 $ for d in 20031231 20040105 20040110; do \
-    ../../../rere.py GODAS godas.P.${d}.nc POT NEMO \
+    ../../../regrid_simple.py GODAS godas.P.${d}.nc POT NEMO \
     godas_temp_${d}_nemo_grid.nc --regrid_weights regrid_weights.nc; \
   done
 ```
+
+Alternatively, regrid using regrid.py as described [here](../README.md).
 
 ## Step 4.
 
@@ -72,5 +74,23 @@ $ python -m pytest -s -m slow test/
 
 ## Step 5.
 
-Configure the model to use the newly created nudging file. This is the same as for monthly data, [see here](../README.md)
+Configure the model to use the newly created nudging file. This similar as for monthly data ([see here](../README.md)), with the following differences:
+    - since the nudging source file contains one month it needs to end with _m01.nc, for example 1_data_1m_potential_temperature_nomask_m01.nc and 1_data_1m_salinity_nomask_m01.nc
+    - the files now contain 5 daily rather than monthly data, so the frequency column below must be changed. 
+    
+```{fortran}
+&namrun        !   parameters of the run
+!-----------------------------------------------------------------------
+    ln_rstart   = .false.   !  start from rest (F) or from a restart file (T)
+
+&namtsd    !   data : Temperature  & Salinity
+!-----------------------------------------------------------------------
+!          !  file name                            ! frequency (hours) ! variable  ! time interp. !  clim  ! 'yearly'/ ! weights  ! rotation ! land/sea mask !
+!          !                                       !  (if <0  months)  !   name    !   (logical)  !  (T/F) ! 'monthly' ! filename ! pairing  ! filename      !
+    sn_tem  = 'data_1m_potential_temperature_nomask',         120        ,'votemper' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
+    sn_sal  = 'data_1m_salinity_nomask'             ,         120        ,'vosaline' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
+    ln_tsd_init   = .true.    !  Initialisation of ocean T & S with T &S input data (T) or not (F)
+    ln_tsd_tradmp = .true.   !  damping of ocean T & S toward T &S input data (T) or not (F)
+```
+
 
