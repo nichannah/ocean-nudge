@@ -7,20 +7,11 @@ import shutil
 import argparse
 import datetime as dt
 import numpy as np
-import multiprocessing as mp
 import netCDF4 as nc
-from scipy import ndimage as nd
 
 from file_util import create_mom_nudging_file, create_nemo_nudging_file
 from lib_util import compress_netcdf_file, sort_by_date, DaySeries, get_time_origin
 
-def smooth_all(data):
-
-    sigma = (2, 3, 3)
-
-    new_data = np.copy(data)
-    new_data[:, :, :] = nd.filters.gaussian_filter(data[:, :, :], sigma)
-    return new_data
 
 def make_nudging_field(forcing_files, var_name, output_file,
                        start_date):
@@ -62,10 +53,6 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
     def find_nearest_index(array, value):
         return (np.abs(array - value)).argmin()
 
-    if model_name == 'NEMO':
-        with nc.Dataset('grid_defs/mesh_mask.nc') as f:
-            nemo_mask = f.variables['tmask'][0, :, :, :]
-
     with nc.Dataset(output_file, 'r+') as of:
         if model_name == 'MOM':
             coeff_name = 'coeff'
@@ -91,9 +78,7 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
                 of.variables[coeff_name][t, :44, 64:830, :] = damp_coeff
             elif model_name == 'NEMO' and domain_name == 'GODAS':
                 of.variables[coeff_name][t, :] = 0.0
-                of.variables[coeff_name][t, :29, 8:129, :] = damp_coeff
-                of.variables[coeff_name][t, :, :, :] *= nemo_mask[:, :, :]
-
+                of.variables[coeff_name][t, :20, 8:129, :] = damp_coeff
             else:
                 of.variables[coeff_name][t, :] = damp_coeff
 
@@ -113,16 +98,6 @@ def guess_input_var_name(forcing_file, tracer):
 
     return None
 
-def get_domain(domain_name, model_name):
-    if args.domain == 'ORAS4':
-        slat = -78.0
-        nlat = 89.5
-        depth = 5350.0
-
-    if args.domain == 'GODAS':
-        slat = -74.5
-        nlat = 64.0
-        depth = 4478.0
 
 def main():
 

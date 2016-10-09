@@ -53,7 +53,7 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
 
     # Regrid pendad files to NEMO grid.
     my_dir = os.path.dirname(os.path.realpath(__file__))
-    regridder = os.path.join(my_dir, '../', 'rere.py')
+    regridder = os.path.join(my_dir, '../regridder/', 'regrid_simple.py')
     nemo_temp_files = regrid_to_nemo(regridder, pentad_files, 'temp',
                                      input_dir, output_dir)
     nemo_salt_files = regrid_to_nemo(regridder, pentad_files, 'salt',
