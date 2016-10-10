@@ -31,17 +31,12 @@ def regrid_to_nemo(regridder, pentad_files, reanalysis_var, input_dir, output_di
     output_files = [os.path.join(output_dir, os.path.basename(f)) \
                         + reanalysis_var + '.nc' for f in pentad_files]
 
-    weights = os.path.join(output_dir, 'regrid_weights.nc')
-
-    if os.path.exists(weights):
-        os.remove(weights)
-
     for inf, outf in zip(pentad_files, output_files):
         if os.path.exists(outf):
             os.remove(outf)
 
         ret = sp.call([regridder, 'GODAS', inf, reanalysis_var,
-                       'NEMO', outf, '--regrid_weights', weights])
+                       'NEMO', outf])
         assert ret == 0
 
     return output_files
