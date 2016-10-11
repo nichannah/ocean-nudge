@@ -9,9 +9,8 @@ import datetime as dt
 import numpy as np
 import netCDF4 as nc
 
-from file_util import create_mom_nudging_file, create_nemo_nudging_file
-from lib_util import compress_netcdf_file, sort_by_date, DaySeries, get_time_origin
-
+import file_util
+import lib_util
 
 def make_nudging_field(forcing_files, var_name, output_file,
                        start_date):
@@ -29,7 +28,7 @@ def make_nudging_field(forcing_files, var_name, output_file,
 
     output_idx = 0
 
-    day_series = DaySeries(forcing_files)
+    day_series = lib_util.DaySeries(forcing_files)
     days = day_series.days
 
     for file in forcing_files:
@@ -142,9 +141,9 @@ def main():
     if args.model_name == 'NEMO':
         assert var_name == 'votemper' or var_name == 'vosaline'
 
-    forcing_files = sort_by_date(args.forcing_files)
+    forcing_files = lib_util.sort_by_date(args.forcing_files)
 
-    start_date = get_time_origin(forcing_files[0])
+    start_date = lib_util.get_time_origin(forcing_files[0])
     if args.start_year is not None:
         start_date = dt.date(args.start_year, start_date.month, start_date.day)
 
@@ -160,13 +159,13 @@ def main():
     coeff_file = os.path.join(args.output_dir, coeff_file)
 
     if args.model_name == 'MOM':
-        create_mom_nudging_file(nudging_file, var_name, '', '',
-                                start_date,
-                                args.forcing_files[0])
+        file_util.create_mom_nudging_file(nudging_file, var_name, '', '',
+                                          start_date,
+                                          args.forcing_files[0])
     else:
-        create_nemo_nudging_file(nudging_file, var_name, '', '',
-                                start_date,
-                                args.forcing_files[0])
+        file_util.create_nemo_nudging_file(nudging_file, var_name, '', '',
+                                           start_date,
+                                           args.forcing_files[0])
     make_nudging_field(args.forcing_files, var_name, nudging_file, start_date)
 
     # Sort out units. FIXME: units are missing in netcdf converted from GODAS
@@ -191,6 +190,10 @@ def main():
     shutil.copy(nudging_file, coeff_file)
     make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name,
                           args.domain)
+
+    if args.model_name == 'MOM':
+        map(lib_util.compress_netcdf_file, [nudging_file, coeff_file])
+
 
 if __name__ == "__main__":
     sys.exit(main())
