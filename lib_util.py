@@ -37,7 +37,8 @@ def get_time_origin(filename):
         else:
             time_var = f.variables['time']
 
-        assert('days since' in time_var.units)
+        assert 'days since' in time_var.units or \
+            'hours since' in time_var.units
         m = re.search('\d{4}-\d{2}-\d{2}', time_var.units)
         assert(m is not None)
         date = dt.datetime.strptime(m.group(0), '%Y-%m-%d')
@@ -63,8 +64,8 @@ def sort_by_date(forcing_files):
 class DaySeries:
     """
     Pull days from files and arrange in an increasing sequence. Each day in the
-    sequence is the number of days since the start date. By default the start
-    date (or origin) is the start date of the earlies file.
+    sequence is the number of days (or hours) since the start date. By default
+    the start date (or origin) is the start date of the earlies file.
     """
 
     def __init__(self, files):
@@ -84,7 +85,13 @@ class DaySeries:
                 else:
                     time_var = f.variables['time']
 
-                days = time_var[:]
+
+                assert 'days since' in time_var.units or \
+                    'hours since' in time_var.units
+                if 'days since' in time_var.units:
+                    days = time_var[:]
+                else:
+                    days = int(time_var[:] / 24.0)
 
                 # Days variable is relative to f_origin, we need to adjust so
                 # that it is relative to self.origin

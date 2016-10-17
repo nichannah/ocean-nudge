@@ -34,11 +34,16 @@ def make_nudging_field(forcing_files, var_name, output_file,
     for file in forcing_files:
         with nc.Dataset(file, 'r') as ff:
             time_var = ff.variables[time_name]
+            assert 'days since' in time_var.units or \
+                'hours since' in time_var.units
 
             for t in range(time_var.shape[0]):
                 tmp_var = ff.variables[var_name][t, :]
                 of.variables[var_name][output_idx, :] = tmp_var[:]
-                of.variables[time_name][output_idx] = days[output_idx]
+                if 'days since' in time_var.units:
+                    of.variables[time_name][output_idx] = days[output_idx]
+                else:
+                    of.variables[time_name][output_idx] = days[output_idx]*24
                 output_idx += 1
 
     of.close()
