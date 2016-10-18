@@ -15,8 +15,7 @@ import lib_util
 def make_nudging_field(forcing_files, var_name, output_file,
                        start_date):
     """
-    Combine forcing files into a nudging field/file. This may invlolve
-    increasing the time resolution of the forcing using linear interpolation.
+    Combine forcing files into a nudging field/file.
     """
 
     of = nc.Dataset(output_file, 'r+')
