@@ -75,9 +75,9 @@ $ python -m pytest -s -m slow test/
 ## Step 5.
 
 Configure the model to use the newly created nudging file. This similar as for monthly data ([see here](../README.md)), with the following differences:
-    - since the nudging source file contains one month it needs to end with _m01.nc, for example 1_data_1m_potential_temperature_nomask_m01.nc and 1_data_1m_salinity_nomask_m01.nc
-    - the files now contain 5 daily rather than monthly data, so the frequency column below must be changed. 
-    
+    * since the nudging source file contains one month it needs to end with _m01.nc, for example 1_data_1m_potential_temperature_nomask_m01.nc and 1_data_1m_salinity_nomask_m01.nc
+    * the files now contain 5 daily rather than monthly data, so the frequency column below must be changed as well as the 'yearly/monthly' column.
+
 ```{fortran}
 &namrun        !   parameters of the run
 !-----------------------------------------------------------------------
@@ -87,8 +87,8 @@ Configure the model to use the newly created nudging file. This similar as for m
 !-----------------------------------------------------------------------
 !          !  file name                            ! frequency (hours) ! variable  ! time interp. !  clim  ! 'yearly'/ ! weights  ! rotation ! land/sea mask !
 !          !                                       !  (if <0  months)  !   name    !   (logical)  !  (T/F) ! 'monthly' ! filename ! pairing  ! filename      !
-    sn_tem  = 'data_1m_potential_temperature_nomask',         120        ,'votemper' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
-    sn_sal  = 'data_1m_salinity_nomask'             ,         120        ,'vosaline' ,    .true.    , .true. , 'yearly'   , ''       ,   ''    ,    ''
+    sn_tem  = 'data_1m_potential_temperature_nomask',         120        ,'votemper' ,    .true.    , .true. , 'monthly'   , ''       ,   ''    ,    ''
+    sn_sal  = 'data_1m_salinity_nomask'             ,         120        ,'vosaline' ,    .true.    , .true. , 'monthly'   , ''       ,   ''    ,    ''
     ln_tsd_init   = .true.    !  Initialisation of ocean T & S with T &S input data (T) or not (F)
     ln_tsd_tradmp = .true.   !  damping of ocean T & S toward T &S input data (T) or not (F)
 ```
