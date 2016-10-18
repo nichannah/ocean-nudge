@@ -61,11 +61,8 @@ $ cd test_data/input/
 $ wget ftp://ftp.icdc.zmaw.de/EASYInit/ORA-S4/monthly_orca1/thetao_oras4_1m_2003_grid_T.nc.gz
 $ wget ftp://ftp.icdc.zmaw.de/EASYInit/ORA-S4/monthly_orca1/thetao_oras4_1m_2004_grid_T.nc.gz
 $ wget ftp://ftp.icdc.zmaw.de/EASYInit/ORA-S4/monthly_orca1/thetao_oras4_1m_2005_grid_T.nc.gz
-$ wget ftp://ftp.icdc.zmaw.de/EASYInit/ORA-S4/orca1_coordinates/coordinates_grid_T.nc
 $ gunzip *.gz
 ```
-
-Note that the coordinates of the T grid are also downloaded.
 
 Alternatively, download the test data that comes with the package:
 
@@ -104,8 +101,10 @@ $ ../../../regridder/regrid.py ORAS4 $GRID_DEFS/coordinates_grid_T.nc \
 We can use a bash for-loop to regrid multiple files with a single command:
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../regridder/regrid_simple.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
-        MOM oras4_temp_${i}_mom_grid.nc --regrid_weights oras4_mom_regrid_weights.nc;
+  ../../../regridder/regrid.py ORAS4 $GRID_DEFS/coordinates_grid_T.nc \
+    $GRID_DEFS/coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
+    MOM $GRID_DEFS/ocean_hgrid.nc $GRID_DEFS/ocean_vgrid.nc oras4_temp_${i}_mom_grid.nc temp \
+    --dest_mask $GRID_DEFS/ocean_mask.nc  --regrid_weights oras4_mom_regrid_weights.nc;
 done
 ```
 
@@ -113,8 +112,11 @@ And for NEMO:
 
 ```{bash}
 $ for i in 2003 2004 2005; do \
-    ../../../regridder/regrid_simple.py ORAS4 thetao_oras4_1m_${i}_grid_T.nc thetao \
-        NEMO oras4_temp_${i}_nemo_grid.nc --regrid_weights oras4_nemo_regrid_weights.nc;
+  ../../../regridder/regrid.py ORAS4 $GRID_DEFS/coordinates_grid_T.nc \
+    $GRID_DEFS/coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
+    NEMO $GRID_DEFS/coordinates.nc $GRID_DEFS/data_1m_potential_temperature_nomask.nc \
+    oras4_temp_${i}_nemo_grid.nc temp \
+    --regrid_weights oras4_nemo_regrid_weights.nc;
 done
 ```
 
