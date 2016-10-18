@@ -196,9 +196,6 @@ def main():
     make_damp_coeff_field(coeff_file, args.damp_coeff, var_name, args.model_name,
                           args.domain)
 
-    if args.model_name == 'MOM':
-        map(lib_util.compress_netcdf_file, [nudging_file, coeff_file])
-
 
 if __name__ == "__main__":
     sys.exit(main())
