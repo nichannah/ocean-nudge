@@ -19,7 +19,6 @@ def compress_netcdf_file(filename, compression_level=7):
     _, tmp = tempfile.mkstemp()
 
     cmd = 'nccopy -d {} {} {}'.format(compression_level, filename, tmp)
-    print(cmd)
     ret = sp.call(shlex.split(cmd))
     assert(ret == 0)
 

@@ -26,7 +26,12 @@ def convert_grib_to_netcdf(input_dir, infiles, output_dir):
 
     return outfiles
 
-def regrid_to_nemo(regridder, pentad_files, reanalysis_var, input_dir, output_dir):
+def regrid_godas(dest_model, pentad_files, reanalysis_var, input_dir, output_dir):
+
+    assert dest_model == 'NEMO' or dest_model == 'MOM'
+
+    my_dir = os.path.dirname(os.path.realpath(__file__))
+    regridder = os.path.join(my_dir, '../regridder/', 'regrid_simple.py')
 
     output_files = [os.path.join(output_dir, os.path.basename(f)) \
                         + reanalysis_var + '.nc' for f in pentad_files]
@@ -36,10 +41,11 @@ def regrid_to_nemo(regridder, pentad_files, reanalysis_var, input_dir, output_di
             os.remove(outf)
 
         ret = sp.call([regridder, 'GODAS', inf, reanalysis_var,
-                       'NEMO', outf])
+                       dest_model, outf])
         assert ret == 0
 
     return output_files
+
 
 def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
 
@@ -48,11 +54,9 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
 
     # Regrid pendad files to NEMO grid.
     my_dir = os.path.dirname(os.path.realpath(__file__))
-    regridder = os.path.join(my_dir, '../regridder/', 'regrid_simple.py')
-    nemo_temp_files = regrid_to_nemo(regridder, pentad_files, 'temp',
-                                     input_dir, output_dir)
-    nemo_salt_files = regrid_to_nemo(regridder, pentad_files, 'salt',
-                                     input_dir, output_dir)
+    makenudge = os.path.join(my_dir, '../', 'makenudge.py')
+    nemo_temp_files = regrid_godas('NEMO', pentad_files, 'temp', input_dir, output_dir)
+    nemo_salt_files = regrid_godas('NEMO', pentad_files, 'salt', input_dir, output_dir)
 
     filenames = ['votemper_nomask.nc', 'vosaline_nomask.nc', 'resto.nc']
     output_files = [os.path.join(output_dir, fn) for fn in filenames]
@@ -67,6 +71,37 @@ def create_nemo_nudge_with_godas_pentad(input_dir, input_files, output_dir):
     assert ret == 0
     ret = sp.call([makenudge, 'NEMO', 'salt', '--output_dir', output_dir,
                    '--domain', 'GODAS', '--forcing_files'] + nemo_salt_files)
+    assert ret == 0
+
+    # Check that outputs exist.
+    for outf in output_files:
+        assert os.path.exists(outf)
+
+def create_mom_nudge_with_godas_pentad(input_dir, input_files, output_dir):
+
+    # Convert GRIB pentad files to netcdf.
+    pentad_files = convert_grib_to_netcdf(input_dir, input_files, output_dir)
+
+    # Regrid pendad files to NEMO grid.
+    my_dir = os.path.dirname(os.path.realpath(__file__))
+    makenudge = os.path.join(my_dir, '../', 'makenudge.py')
+    mom_temp_files = regrid_godas('MOM', pentad_files, 'temp', input_dir, output_dir)
+    mom_salt_files = regrid_godas('MOM', pentad_files, 'salt', input_dir, output_dir)
+
+    filenames = ['temp_sponge.nc', 'salt_sponge.nc',
+                 'temp_sponge_coeff.nc', 'salt_sponge_coeff.nc']
+    output_files = [os.path.join(output_dir, fn) for fn in filenames]
+    for outf in output_files:
+        if os.path.exists(outf):
+            os.remove(outf)
+
+    # Create the nudging source files.
+    makenudge = os.path.join(my_dir, '../', 'makenudge.py')
+    ret = sp.call([makenudge, 'MOM', 'temp', '--output_dir', output_dir,
+                   '--domain', 'GODAS', '--forcing_files'] + mom_temp_files)
+    assert ret == 0
+    ret = sp.call([makenudge, 'MOM', 'salt', '--output_dir', output_dir,
+                   '--domain', 'GODAS', '--forcing_files'] + mom_salt_files)
     assert ret == 0
 
     # Check that outputs exist.
@@ -107,4 +142,16 @@ class TestNudge():
 
         infiles = glob.glob(input_dir + '/*.grb')
         create_nemo_nudge_with_godas_pentad(input_dir, [infiles[0]], output_dir)
+
+    @pytest.mark.slow
+    def test_mom_godas_pentad(self, input_dir, output_dir):
+
+        infiles = glob.glob(input_dir + '/*.grb')
+        create_mom_nudge_with_godas_pentad(input_dir, infiles, output_dir)
+
+    @pytest.mark.fast
+    def test_mom_godas_pentad_minimal(self, input_dir, output_dir):
+
+        infiles = glob.glob(input_dir + '/*.grb')
+        create_mom_nudge_with_godas_pentad(input_dir, [infiles[0]], output_dir)
 
