@@ -44,7 +44,9 @@ def make_nudging_field(forcing_files, var_name, output_file,
                 else:
                     of.variables[time_name][output_idx] = days[output_idx]*24
                 output_idx += 1
+        print('.', end='')
 
+    print('.')
     of.close()
 
 
