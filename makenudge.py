@@ -59,7 +59,7 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
         return (np.abs(array - value)).argmin()
 
     with nc.Dataset(output_file, 'r+') as of:
-        if model_name == 'MOM':
+        if 'MOM' in model_name:
             coeff_name = 'coeff'
         else:
             assert model_name == 'NEMO'
@@ -81,6 +81,9 @@ def make_damp_coeff_field(output_file, damp_coeff, variable, model_name, domain_
                 # nlat = 64.0
                 # depth = 4478.0
                 of.variables[coeff_name][t, :44, 64:830, :] = damp_coeff
+            elif model_name == 'MOM1' and domain_name == 'GODAS':
+                of.variables[coeff_name][t, :] = 0.0
+                of.variables[coeff_name][t, :44, 24:240, :] = damp_coeff
             elif model_name == 'NEMO' and domain_name == 'GODAS':
                 of.variables[coeff_name][t, :] = 0.0
                 of.variables[coeff_name][t, :20, 8:129, :] = damp_coeff
@@ -108,7 +111,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model_name",
-                        help="Name of the model to nudge, can be MOM or NEMO.")
+                        help="Name of the model to nudge, can be MOM, MOM1 or NEMO.")
     parser.add_argument('nudging_var',
                         help="Variable to nudge. Must be 'salt' or 'temp'.")
     parser.add_argument("--forcing_files", nargs='+', default=None,
@@ -133,7 +136,8 @@ def main():
                         """)
     args = parser.parse_args()
 
-    assert args.model_name == 'MOM' or args.model_name == 'NEMO'
+    assert args.model_name == 'MOM' or args.model_name == 'MOM1' or \
+               args.model_name == 'NEMO'
     assert args.forcing_files is not None
     assert args.domain == 'GODAS' or args.domain == 'ORAS4' or \
         args.domain == 'GLOBAL'
@@ -141,7 +145,7 @@ def main():
     var_name = guess_input_var_name(args.forcing_files[0], args.nudging_var)
     assert var_name is not None
 
-    if args.model_name == 'MOM':
+    if 'MOM' in args.model_name:
         assert var_name == 'temp' or var_name == 'salt'
 
     if args.model_name == 'NEMO':
@@ -153,7 +157,7 @@ def main():
     if args.start_year is not None:
         start_date = dt.date(args.start_year, start_date.month, start_date.day)
 
-    if args.model_name == 'MOM':
+    if 'MOM' in args.model_name:
         assert var_name == 'temp' or var_name == 'salt'
         nudging_file = var_name + '_sponge.nc'
         coeff_file = '{}_sponge_coeff.nc'.format(var_name)
@@ -164,7 +168,7 @@ def main():
     nudging_file = os.path.join(args.output_dir, nudging_file)
     coeff_file = os.path.join(args.output_dir, coeff_file)
 
-    if args.model_name == 'MOM':
+    if 'MOM' in args.model_name:
         file_util.create_mom_nudging_file(nudging_file, var_name, '', '',
                                           start_date,
                                           args.forcing_files[0])
