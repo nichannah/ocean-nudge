@@ -235,6 +235,14 @@ The NEMO_3.6 ORCA2 configuration is already set up to do global nudging, it does
 /
 ```
 
+# Example output
+
+## Nudge MOM 1 degree with GODAS pentad
+
+Days 1, 5, and 10. 
+
+![Temp from MOM nudged with GODAS pentad](https://raw.github.com/nicjhan/ocean-nudge/master/docs/mom1_nudge_with_godas_pentad.png)
+
 # Developer notes
 
 ## Package ocean-nudge into a tarball using PyInstaller
