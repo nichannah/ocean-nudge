@@ -1,6 +1,6 @@
 # ocean-nudge
 
-Create ocean temperature and salt nudging and damping coefficient files. These files can used to nudge an either MOM or NEMO towards observations.
+Create ocean temperature and salt nudging and damping coefficient files. These files can used to nudge either MOM 0.25 degree, MOM 1 degree or NEMO models towards observations.
 
 Build status: [![Build Status](https://travis-ci.org/nicjhan/ocean-nudge.svg?branch=master)](https://travis-ci.org/nicjhan/ocean-nudge)
 
@@ -79,7 +79,7 @@ Regrid the reanalysis files to the model grid. This can be done with regrid_simp
 
 The following commands assume a working directory of test/test_data/input.
 
-For example, for MOM:
+For example, for MOM 0.25 degree:
 ```{bash}
 $ cd test/test_data/input
 $ ../../../regridder/regrid_simple.py ORAS4 thetao_oras4_1m_2004_grid_T.nc thetao \
@@ -108,6 +108,19 @@ $ for i in 2003 2004 2005; do \
 done
 ```
 
+And for MOM 1 degree:
+
+```{bash}
+$ for i in 2003 2004 2005; do \
+  ../../../regridder/regrid.py ORAS4 $GRID_DEFS/coordinates_grid_T.nc \
+    $GRID_DEFS/coordinates_grid_T.nc thetao_oras4_1m_${i}_grid_T.nc thetao \
+    MOM1 $GRID_DEFS/grid_spec.nc $GRID_DEFS/grid_spec.nc oras4_temp_${i}_mom_grid.nc temp \
+    --dest_mask $GRID_DEFS/grid_spec.nc  --regrid_weights oras4_mom_regrid_weights.nc;
+done
+```
+
+Note that the model name has been changed from MOM to MOM1 and the grid definition files have been changed.
+
 And for NEMO:
 
 ```{bash}
@@ -126,9 +139,15 @@ Note that in this case because the --regrid_weights option is used the computati
 
 Combine the above regridded reanalysis files into a single nudging source file. Note the reanalyses are monthly averages with a nominal time index in the middle of the month. This means that in order for nudging to start at the beginning of the year data from the previous year is needed - the models create data for the beginning of January by interpolating from December of the previous year. So, for example to nudge the model for the whole of 2004:
 
-e.g. for MOM:
+e.g. for MOM 0.25 degree:
 ```
 $ ../../../makenudge.py MOM temp --forcing_files oras4_temp_2003_mom_grid.nc
+    oras4_temp_2004_mom_grid.nc oras4_temp_2005_mom_grid.nc
+```
+
+For MOM 1 degree:
+```
+$ ../../../makenudge.py MOM1 temp --forcing_files oras4_temp_2003_mom_grid.nc
     oras4_temp_2004_mom_grid.nc oras4_temp_2005_mom_grid.nc
 ```
 
