@@ -237,9 +237,7 @@ The NEMO_3.6 ORCA2 configuration is already set up to do global nudging, it does
 
 # Example output
 
-## Nudge MOM 1 degree with GODAS pentad
-
-Days 1, 5, and 10. 
+MOM 1 degree nudged with GODAS pentad. Days 1, 5, and 10. Note that the high latitudes are not nudged due to the limited GODAS domain.
 
 ![Temp from MOM nudged with GODAS pentad](https://raw.github.com/nicjhan/ocean-nudge/master/docs/mom1_nudge_with_godas_pentad.png)
 
